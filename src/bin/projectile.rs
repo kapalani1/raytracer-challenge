@@ -1,4 +1,4 @@
-use raytracer::{canvas::Canvas, tuple::Tuple, color::Color};
+use raytracer::{canvas::Canvas, color::Color, tuple::Tuple};
 
 struct Projectile {
     position: Tuple,

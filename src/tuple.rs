@@ -1,6 +1,11 @@
-use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub};
+use std::{
+    ops::{Add, AddAssign, Div, Mul, Neg, Sub},
+    vec,
+};
 
 use float_cmp::approx_eq;
+
+use crate::matrix::Matrix;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Tuple {
@@ -11,7 +16,7 @@ pub struct Tuple {
 }
 
 impl Tuple {
-    fn new(x: f64, y: f64, z: f64, w: f64) -> Self {
+    pub fn new(x: f64, y: f64, z: f64, w: f64) -> Self {
         Tuple { x, y, z, w }
     }
 
@@ -51,6 +56,21 @@ impl Tuple {
             self.z * rhs.x - self.x * rhs.z,
             self.x * rhs.y - self.y * rhs.x,
         )
+    }
+
+    pub fn from_matrix(m: &Matrix) -> Self {
+        assert_eq!(m.values.len(), 4);
+        assert_eq!(m.values[0].len(), 1);
+        Tuple {
+            x: m.values[0][0],
+            y: m.values[1][0],
+            z: m.values[2][0],
+            w: m.values[3][0],
+        }
+    }
+
+    pub fn to_vector(&self) -> Vec<f64> {
+        vec![self.x, self.y, self.z, self.w]
     }
 }
 

@@ -1,10 +1,9 @@
 use crate::color::Color;
-use array2d::Array2D;
 
 pub struct Canvas {
     pub width: usize,
     pub height: usize,
-    pixels: Array2D<Color>,
+    pixels: Vec<Vec<Color>>,
 }
 
 impl Canvas {
@@ -12,13 +11,13 @@ impl Canvas {
         Canvas {
             width,
             height,
-            pixels: Array2D::filled_with(Color::new(0., 0., 0.), height, width),
+            pixels: vec![vec![Color::new(0., 0., 0.); width]; height],
         }
     }
 
     pub fn write_pixel(&mut self, x: usize, y: usize, color: Color) {
         // x dimension is width (cols) and y dimension is height (rows)
-        self.pixels[(y, x)] = color;
+        self.pixels[y][x] = color;
     }
 
     fn add_component_to_line(&self, line: &mut String, ppm: &mut String, component: u8) {
@@ -40,12 +39,12 @@ impl Canvas {
         }
     }
 
-    fn write_ppm(&self, pixels: &Array2D<Color>) -> String {
+    fn write_ppm(&self) -> String {
         let mut ppm = String::new();
-        ppm.push_str(format!("P3\n{} {}\n255\n", pixels.num_columns(), pixels.num_rows()).as_str());
-        for row in 0..pixels.num_rows() {
+        ppm.push_str(format!("P3\n{} {}\n255\n", self.width, self.height).as_str());
+        for row in 0..self.height {
             let mut line = String::new();
-            for pixel in pixels.row_iter(row) {
+            for pixel in &self.pixels[row] {
                 let mut scaled_pixel = pixel * 255.;
                 scaled_pixel.clamp();
                 self.add_component_to_line(&mut line, &mut ppm, scaled_pixel.red.round() as u8);
@@ -62,11 +61,11 @@ impl Canvas {
     }
 
     pub fn to_ppm(&self) -> String {
-        self.write_ppm(&self.pixels)
+        self.write_ppm()
     }
 
     pub fn save_ppm(&self, path: &str) {
-      std::fs::write(path, self.to_ppm()).unwrap();
+        std::fs::write(path, self.to_ppm()).unwrap();
     }
 }
 
@@ -80,7 +79,7 @@ mod tests {
         assert_eq!(c.height, 20);
         for i in 0..c.height {
             for j in 0..c.width {
-                assert_eq!(c.pixels[(i, j)], Color::new(0., 0., 0.));
+                assert_eq!(c.pixels[i][j], Color::new(0., 0., 0.));
             }
         }
     }
@@ -94,9 +93,9 @@ mod tests {
         for x in 0..c.width {
             for y in 0..c.height {
                 if x == 2 && y == 3 {
-                    assert_eq!(c.pixels[(y, x)], Color::new(1., 0., 0.))
+                    assert_eq!(c.pixels[y][x], Color::new(1., 0., 0.))
                 } else {
-                    assert_eq!(c.pixels[(y, x)], Color::new(0., 0., 0.))
+                    assert_eq!(c.pixels[y][x], Color::new(0., 0., 0.))
                 }
             }
         }
@@ -136,9 +135,12 @@ mod tests {
             .filter(|s| s.len() > 1)
             .collect::<Vec<&str>>()[3..];
         let pixels = pixels.into_iter().fold(String::new(), |acc, x| acc + x);
-        assert_eq!(pixels, "255 204 153 255 204 153 255 204 153 255 204 153 255 204 153 255 204\n\
+        assert_eq!(
+            pixels,
+            "255 204 153 255 204 153 255 204 153 255 204 153 255 204 153 255 204\n\
         153 255 204 153 255 204 153 255 204 153 255 204 153\n\
         255 204 153 255 204 153 255 204 153 255 204 153 255 204 153 255 204\n\
-        153 255 204 153 255 204 153 255 204 153 255 204 153\n");
+        153 255 204 153 255 204 153 255 204 153 255 204 153\n"
+        );
     }
 }
