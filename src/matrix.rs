@@ -122,7 +122,6 @@ impl<'a> Mul<&'a Matrix> for &'a Matrix {
     fn mul(self, rhs: Self) -> Self::Output {
         assert_eq!(self.cols(), rhs.rows());
         let mut values = vec![vec![0.; rhs.cols()]; self.rows()];
-        println!("{:?}", values);
         for row in 0..self.rows() {
             for col in 0..rhs.cols() {
                 let mut val = 0.;
@@ -138,6 +137,14 @@ impl<'a> Mul<&'a Matrix> for &'a Matrix {
     }
 }
 
+impl<'a> Mul<&'a Matrix> for Matrix {
+    type Output = Matrix;
+
+    fn mul(self, rhs: &'a Matrix) -> Self::Output {
+        &self * rhs
+    }
+}
+
 impl Mul for Matrix {
     type Output = Matrix;
 
@@ -146,13 +153,27 @@ impl Mul for Matrix {
     }
 }
 
+impl<'a> Mul<&'a Tuple> for &'a Matrix {
+    type Output = Tuple;
+    fn mul(self, rhs: &'a Tuple) -> Self::Output {
+        let result = self * &Matrix::new(&vec![vec![rhs.x], vec![rhs.y], vec![rhs.z], vec![rhs.w]]);
+        Tuple::from_matrix(&result)
+    }
+}
+
+impl<'a> Mul<&'a Tuple> for Matrix {
+    type Output = Tuple;
+
+    fn mul(self, rhs: &'a Tuple) -> Self::Output {
+        &self * rhs
+    }
+}
+
 impl Mul<Tuple> for Matrix {
     type Output = Tuple;
 
     fn mul(self, rhs: Tuple) -> Self::Output {
-        let result =
-            &self * &Matrix::new(&vec![vec![rhs.x], vec![rhs.y], vec![rhs.z], vec![rhs.w]]);
-        Tuple::from_matrix(&result)
+        &self * &rhs
     }
 }
 

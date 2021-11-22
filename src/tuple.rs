@@ -76,10 +76,10 @@ impl Tuple {
 
 impl PartialEq for Tuple {
     fn eq(&self, other: &Self) -> bool {
-        approx_eq!(f64, self.x, other.x)
-            && approx_eq!(f64, self.y, other.y)
-            && approx_eq!(f64, self.z, other.z)
-            && approx_eq!(f64, self.w, other.w)
+        approx_eq!(f64, self.x, other.x, epsilon = 0.00001)
+            && approx_eq!(f64, self.y, other.y, epsilon = 0.00001)
+            && approx_eq!(f64, self.z, other.z, epsilon = 0.00001)
+            && approx_eq!(f64, self.w, other.w, epsilon = 0.00001)
     }
 }
 
