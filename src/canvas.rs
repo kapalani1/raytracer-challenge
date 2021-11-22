@@ -134,7 +134,7 @@ mod tests {
             .split_inclusive('\n')
             .filter(|s| s.len() > 1)
             .collect::<Vec<&str>>()[3..];
-        let pixels = pixels.into_iter().fold(String::new(), |acc, x| acc + x);
+        let pixels = pixels.concat();
         assert_eq!(
             pixels,
             "255 204 153 255 204 153 255 204 153 255 204 153 255 204 153 255 204\n\
