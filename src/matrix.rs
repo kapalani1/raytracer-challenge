@@ -4,7 +4,7 @@ use float_cmp::approx_eq;
 
 use crate::tuple::Tuple;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Matrix {
     pub values: Vec<Vec<f64>>,
 }
@@ -145,14 +145,6 @@ impl<'a> Mul<&'a Matrix> for Matrix {
     }
 }
 
-impl Mul for Matrix {
-    type Output = Matrix;
-
-    fn mul(self, rhs: Self) -> Self::Output {
-        &self * &rhs
-    }
-}
-
 impl<'a> Mul<&'a Tuple> for &'a Matrix {
     type Output = Tuple;
     fn mul(self, rhs: &'a Tuple) -> Self::Output {
@@ -166,14 +158,6 @@ impl<'a> Mul<&'a Tuple> for Matrix {
 
     fn mul(self, rhs: &'a Tuple) -> Self::Output {
         &self * rhs
-    }
-}
-
-impl Mul<Tuple> for Matrix {
-    type Output = Tuple;
-
-    fn mul(self, rhs: Tuple) -> Self::Output {
-        &self * &rhs
     }
 }
 
@@ -281,7 +265,7 @@ mod tests {
             vec![1., 2., 7., 8.],
         ]);
         assert_eq!(
-            a * b,
+            &a * &b,
             Matrix::new(&vec![
                 vec![20., 22., 50., 48.],
                 vec![44., 54., 114., 108.],
@@ -300,7 +284,7 @@ mod tests {
             vec![0., 0., 0., 1.],
         ]);
         let b: Tuple = Tuple::new(1., 2., 3., 1.);
-        assert_eq!(a * b, Tuple::new(18., 24., 33., 1.));
+        assert_eq!(&a * &b, Tuple::new(18., 24., 33., 1.));
     }
 
     #[test]
@@ -317,7 +301,7 @@ mod tests {
     #[test]
     fn identity_tuple() {
         let a = Tuple::new(1., 2., 3., 4.);
-        assert_eq!(Matrix::identity(4) * a, a);
+        assert_eq!(&Matrix::identity(4) * &a, a);
     }
 
     #[test]
@@ -499,7 +483,7 @@ mod tests {
         ]);
 
         let c = &a * &b;
-        assert_eq!(c * b.inverse(), a);
+        assert_eq!(&c * &b.inverse(), a);
         assert_eq!(&b * &b.inverse(), Matrix::identity(4));
     }
 

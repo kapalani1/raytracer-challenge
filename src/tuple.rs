@@ -20,11 +20,11 @@ impl Tuple {
         Tuple { x, y, z, w }
     }
 
-    fn is_vector(&self) -> bool {
+    pub fn is_vector(&self) -> bool {
         self.w == 0.
     }
 
-    fn is_point(&self) -> bool {
+    pub fn is_point(&self) -> bool {
         self.w == 1.
     }
 

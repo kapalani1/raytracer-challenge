@@ -1,7 +1,7 @@
 use float_cmp::approx_eq;
 use std::ops::{Add, Mul, Sub};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Copy, Clone)]
 pub struct Color {
     pub red: f64,
     pub green: f64,

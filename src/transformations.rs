@@ -1,6 +1,4 @@
 use crate::matrix::Matrix;
-use crate::tuple::Tuple;
-use std::f64::consts::PI;
 
 impl Matrix {
     pub fn translation(x: f64, y: f64, z: f64) -> Matrix {
@@ -61,6 +59,8 @@ impl Matrix {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tuple::Tuple;
+    use std::f64::consts::PI;
 
     #[test]
     fn translate() {
@@ -81,7 +81,7 @@ mod tests {
         assert_eq!(&scaling * &v, Tuple::vector(-8., 18., 32.));
         assert_eq!(&scaling.inverse() * &v, Tuple::vector(-2., 2., 2.));
         assert_eq!(
-            Matrix::scaling(-1., 1., 1.) * Tuple::point(2., 3., 4.),
+            Matrix::scaling(-1., 1., 1.) * &Tuple::point(2., 3., 4.),
             Tuple::point(-2., 3., 4.)
         );
     }
