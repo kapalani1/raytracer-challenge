@@ -1,10 +1,12 @@
-use raytracer::{canvas::Canvas, color::Color, ray::Ray, sphere::Sphere, tuple::Tuple};
+use raytracer::{canvas::Canvas, color::Color, light::PointLight, material::lighting, ray::Ray, sphere::Sphere, tuple::Tuple};
 
 fn main() {
     let mut c = Canvas::new(100, 100);
     let wall_height = 7.;
     let origin = Tuple::point(0., 0., -5.);
-    let s = Sphere::new();
+    let mut s = Sphere::new();
+    s.material.color = Color::new(1., 0.2, 1.);
+    let light = PointLight::new(Tuple::point(-10., 10., -10.), Color::new(1., 1., 1.));
 
     for row in 0..100 {
         for col in 0..100 {
@@ -13,8 +15,12 @@ fn main() {
             let world_point = Tuple::point(world_x, world_y, 10.);
             let direction = (world_point - origin).normalize();
             let ray = Ray::new(origin, direction);
-            if let Some(_) = ray.intersect(&s).hit() {
-                c.write_pixel(col, row, Color::new(1., 0.65, 0.0));
+            if let Some(hit) = ray.intersect(&s).hit() {
+                let point = ray.position(hit.t);
+                let normal = hit.object.normal(&point);
+                let eye = -ray.direction;
+                let color = lighting(hit.object.material(), &light, point, eye, normal);
+                c.write_pixel(col, row, color);
             }
         }
     }

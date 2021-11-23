@@ -25,18 +25,6 @@ impl Sphere {
     pub fn set_transform(&mut self, m: &Matrix) {
         self.transform = m.clone();
     }
-
-    pub fn normal(&self, point: &Tuple) -> Tuple {
-        let object_space_point = self.transform.inverse() * point;
-        let object_normal = Tuple::vector(
-            object_space_point.x,
-            object_space_point.y,
-            object_space_point.z,
-        );
-        let mut world_normal = self.transform.inverse().transpose() * &object_normal;
-        world_normal.w = 0.;
-        world_normal.normalize()
-    }
 }
 
 impl Intersect for Sphere {
@@ -63,6 +51,23 @@ impl Intersect for Sphere {
     fn as_ref(&self) -> &dyn Intersect {
         self
     }
+
+    fn normal(&self, point: &Tuple) -> Tuple {
+      let object_space_point = self.transform.inverse() * point;
+      let object_normal = Tuple::vector(
+          object_space_point.x,
+          object_space_point.y,
+          object_space_point.z,
+      );
+      let mut world_normal = self.transform.inverse().transpose() * &object_normal;
+      world_normal.w = 0.;
+      world_normal.normalize()
+  }
+
+  fn material(&self) -> &Material {
+    &self.material
+  }
+
 }
 
 #[cfg(test)]
