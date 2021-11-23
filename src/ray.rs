@@ -24,9 +24,9 @@ impl Ray {
     }
 
     pub fn transform(&self, transformation: &Matrix) -> Self {
-      let origin = transformation * &self.origin;
-      let direction = transformation * &self.direction;
-      Ray { origin, direction }
+        let origin = transformation * &self.origin;
+        let direction = transformation * &self.direction;
+        Ray { origin, direction }
     }
 }
 
@@ -120,16 +120,15 @@ mod tests {
 
     #[test]
     fn transform() {
-      let r = Ray::new(Tuple::point(1., 2., 3.), Tuple::vector(0., 1., 0.));
-      let m = Matrix::translation(3., 4., 5.);
-      let r2 = r.transform(&m);
-      assert_eq!(r2.origin, Tuple::point(4., 6., 8.));
-      assert_eq!(r2.direction, Tuple::vector(0., 1., 0.));
+        let r = Ray::new(Tuple::point(1., 2., 3.), Tuple::vector(0., 1., 0.));
+        let m = Matrix::translation(3., 4., 5.);
+        let r2 = r.transform(&m);
+        assert_eq!(r2.origin, Tuple::point(4., 6., 8.));
+        assert_eq!(r2.direction, Tuple::vector(0., 1., 0.));
 
-      let m = Matrix::scaling(2., 3., 4.);
-      let r2 = r.transform(&m);
-      assert_eq!(r2.origin, Tuple::point(2., 6., 12.));
-      assert_eq!(r2.direction, Tuple::vector(0., 3., 0.));
-
+        let m = Matrix::scaling(2., 3., 4.);
+        let r2 = r.transform(&m);
+        assert_eq!(r2.origin, Tuple::point(2., 6., 12.));
+        assert_eq!(r2.direction, Tuple::vector(0., 3., 0.));
     }
 }

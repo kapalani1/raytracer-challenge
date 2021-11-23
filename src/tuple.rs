@@ -72,6 +72,11 @@ impl Tuple {
     pub fn to_vector(&self) -> Vec<f64> {
         vec![self.x, self.y, self.z, self.w]
     }
+
+    pub fn reflect(&self, normal: &Tuple) -> Self {
+        assert!(self.is_vector());
+        *self - *normal * 2. * self.dot(normal)
+    }
 }
 
 impl PartialEq for Tuple {
@@ -281,5 +286,16 @@ mod tests {
         let b = Tuple::vector(2., 3., 4.);
         assert_eq!(a.cross(&b), Tuple::vector(-1., 2., -1.));
         assert_eq!(b.cross(&a), Tuple::vector(1., -2., 1.));
+    }
+
+    #[test]
+    fn reflect() {
+        let v = Tuple::vector(1., -1., 0.);
+        let n = Tuple::vector(0., 1., 0.);
+        assert_eq!(v.reflect(&n), Tuple::vector(1., 1., 0.));
+
+        let v = Tuple::vector(0., -1., 0.);
+        let n = Tuple::vector(2_f64.sqrt() / 2., 2_f64.sqrt() / 2., 0.);
+        assert_eq!(v.reflect(&n), Tuple::vector(1., 0., 0.));
     }
 }

@@ -1,4 +1,5 @@
 use crate::intersection::{Intersect, Intersection, IntersectionList};
+use crate::material::Material;
 use crate::matrix::Matrix;
 use crate::ray::Ray;
 use crate::tuple::Tuple;
@@ -7,7 +8,8 @@ use crate::tuple::Tuple;
 pub struct Sphere {
     pub center: Tuple,
     pub radius: f64,
-    pub transform: Matrix
+    pub transform: Matrix,
+    pub material: Material,
 }
 
 impl Sphere {
@@ -15,12 +17,25 @@ impl Sphere {
         Sphere {
             center: Tuple::point(0., 0., 0.),
             radius: 1.,
-            transform: Matrix::identity(4)
+            transform: Matrix::identity(4),
+            material: Material::new(),
         }
     }
 
     pub fn set_transform(&mut self, m: &Matrix) {
-      self.transform = m.clone();
+        self.transform = m.clone();
+    }
+
+    pub fn normal(&self, point: &Tuple) -> Tuple {
+        let object_space_point = self.transform.inverse() * point;
+        let object_normal = Tuple::vector(
+            object_space_point.x,
+            object_space_point.y,
+            object_space_point.z,
+        );
+        let mut world_normal = self.transform.inverse().transpose() * &object_normal;
+        world_normal.w = 0.;
+        world_normal.normalize()
     }
 }
 
@@ -52,29 +67,79 @@ impl Intersect for Sphere {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+    use super::*;
 
-  #[test]
-  fn sphere() {
-    let mut s = Sphere::new();
-    assert_eq!(s.transform, Matrix::identity(4));
-    let m = Matrix::translation(2., 3., 4.);
-    s.set_transform(&m);
-    assert_eq!(s.transform, m);
-  }
+    #[test]
+    fn sphere() {
+        let mut s = Sphere::new();
+        assert_eq!(s.transform, Matrix::identity(4));
+        assert_eq!(s.material, Material::new());
+        let m = Matrix::translation(2., 3., 4.);
+        s.set_transform(&m);
+        assert_eq!(s.transform, m);
+        let mut m = Material::new();
+        m.ambient = 1.;
+        s.material = m.clone();
+        assert_eq!(s.material, m);
+    }
 
-  #[test]
-  fn ray_sphere_intersection() {
-    let r = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
-    let mut s = Sphere::new();
-    s.set_transform(&Matrix::scaling(2., 2., 2.));
-    let i = r.intersect(&s);
-    assert_eq!(i.intersections.len(), 2);
-    assert_eq!(i.intersections[0].t, 3.);
-    assert_eq!(i.intersections[1].t, 7.);
+    #[test]
+    fn ray_sphere_intersection() {
+        let r = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
+        let mut s = Sphere::new();
+        s.set_transform(&Matrix::scaling(2., 2., 2.));
+        let i = r.intersect(&s);
+        assert_eq!(i.intersections.len(), 2);
+        assert_eq!(i.intersections[0].t, 3.);
+        assert_eq!(i.intersections[1].t, 7.);
 
-    s.set_transform(&Matrix::translation(5., 0., 0.));
-    let i = r.intersect(&s);
-    assert_eq!(i.intersections.len(), 0);
-  }
+        s.set_transform(&Matrix::translation(5., 0., 0.));
+        let i = r.intersect(&s);
+        assert_eq!(i.intersections.len(), 0);
+    }
+
+    #[test]
+    fn normal() {
+        let s = Sphere::new();
+        assert_eq!(
+            s.normal(&Tuple::point(1., 0., 0.)),
+            Tuple::vector(1., 0., 0.)
+        );
+        assert_eq!(
+            s.normal(&Tuple::point(0., 1., 0.)),
+            Tuple::vector(0., 1., 0.)
+        );
+        assert_eq!(
+            s.normal(&Tuple::point(0., 0., 1.)),
+            Tuple::vector(0., 0., 1.)
+        );
+        let normal = s.normal(&Tuple::point(
+            3_f64.sqrt() / 3.,
+            3_f64.sqrt() / 3.,
+            3_f64.sqrt() / 3.,
+        ));
+        assert_eq!(
+            normal,
+            Tuple::vector(3_f64.sqrt() / 3., 3_f64.sqrt() / 3., 3_f64.sqrt() / 3.)
+        );
+        assert_eq!(normal.normalize(), normal);
+    }
+
+    #[test]
+    fn normal_translated() {
+        let mut s = Sphere::new();
+        s.set_transform(&Matrix::translation(0., 1., 0.));
+        assert_eq!(
+            s.normal(&Tuple::point(0., 1.70711, -0.70711)),
+            Tuple::vector(0., 0.70711, -0.70711)
+        );
+
+        s.set_transform(
+            &(Matrix::scaling(1., 0.5, 1.) * &Matrix::rotation_z(std::f64::consts::PI / 5.)),
+        );
+        assert_eq!(
+            s.normal(&Tuple::point(0., 2_f64.sqrt() / 2., -2_f64.sqrt() / 2.)),
+            Tuple::vector(0., 0.97014, -0.24254)
+        );
+    }
 }
