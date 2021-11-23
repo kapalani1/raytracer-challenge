@@ -2,7 +2,7 @@ use crate::intersection::{Intersect, IntersectionList};
 use crate::matrix::Matrix;
 use crate::tuple::Tuple;
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Ray {
     pub origin: Tuple,
     pub direction: Tuple,
@@ -24,8 +24,8 @@ impl Ray {
     }
 
     pub fn transform(&self, transformation: &Matrix) -> Self {
-        let origin = transformation * &self.origin;
-        let direction = transformation * &self.direction;
+        let origin = transformation * self.origin;
+        let direction = transformation * self.direction;
         Ray { origin, direction }
     }
 }

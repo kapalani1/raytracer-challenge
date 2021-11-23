@@ -145,18 +145,18 @@ impl<'a> Mul<&'a Matrix> for Matrix {
     }
 }
 
-impl<'a> Mul<&'a Tuple> for &'a Matrix {
+impl<'a> Mul<Tuple> for &'a Matrix {
     type Output = Tuple;
-    fn mul(self, rhs: &'a Tuple) -> Self::Output {
+    fn mul(self, rhs: Tuple) -> Self::Output {
         let result = self * &Matrix::new(&vec![vec![rhs.x], vec![rhs.y], vec![rhs.z], vec![rhs.w]]);
         Tuple::from_matrix(&result)
     }
 }
 
-impl<'a> Mul<&'a Tuple> for Matrix {
+impl Mul<Tuple> for Matrix {
     type Output = Tuple;
 
-    fn mul(self, rhs: &'a Tuple) -> Self::Output {
+    fn mul(self, rhs: Tuple) -> Self::Output {
         &self * rhs
     }
 }
@@ -284,7 +284,7 @@ mod tests {
             vec![0., 0., 0., 1.],
         ]);
         let b: Tuple = Tuple::new(1., 2., 3., 1.);
-        assert_eq!(&a * &b, Tuple::new(18., 24., 33., 1.));
+        assert_eq!(&a * b, Tuple::new(18., 24., 33., 1.));
     }
 
     #[test]
@@ -301,7 +301,7 @@ mod tests {
     #[test]
     fn identity_tuple() {
         let a = Tuple::new(1., 2., 3., 4.);
-        assert_eq!(&Matrix::identity(4) * &a, a);
+        assert_eq!(&Matrix::identity(4) * a, a);
     }
 
     #[test]

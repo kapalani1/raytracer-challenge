@@ -4,7 +4,7 @@ use crate::matrix::Matrix;
 use crate::ray::Ray;
 use crate::tuple::Tuple;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Sphere {
     pub center: Tuple,
     pub radius: f64,
@@ -52,22 +52,21 @@ impl Intersect for Sphere {
         self
     }
 
-    fn normal(&self, point: &Tuple) -> Tuple {
-      let object_space_point = self.transform.inverse() * point;
-      let object_normal = Tuple::vector(
-          object_space_point.x,
-          object_space_point.y,
-          object_space_point.z,
-      );
-      let mut world_normal = self.transform.inverse().transpose() * &object_normal;
-      world_normal.w = 0.;
-      world_normal.normalize()
-  }
+    fn normal(&self, point: Tuple) -> Tuple {
+        let object_space_point = self.transform.inverse() * point;
+        let object_normal = Tuple::vector(
+            object_space_point.x,
+            object_space_point.y,
+            object_space_point.z,
+        );
+        let mut world_normal = self.transform.inverse().transpose() * object_normal;
+        world_normal.w = 0.;
+        world_normal.normalize()
+    }
 
-  fn material(&self) -> &Material {
-    &self.material
-  }
-
+    fn material(&self) -> &Material {
+        &self.material
+    }
 }
 
 #[cfg(test)]
@@ -107,18 +106,18 @@ mod tests {
     fn normal() {
         let s = Sphere::new();
         assert_eq!(
-            s.normal(&Tuple::point(1., 0., 0.)),
+            s.normal(Tuple::point(1., 0., 0.)),
             Tuple::vector(1., 0., 0.)
         );
         assert_eq!(
-            s.normal(&Tuple::point(0., 1., 0.)),
+            s.normal(Tuple::point(0., 1., 0.)),
             Tuple::vector(0., 1., 0.)
         );
         assert_eq!(
-            s.normal(&Tuple::point(0., 0., 1.)),
+            s.normal(Tuple::point(0., 0., 1.)),
             Tuple::vector(0., 0., 1.)
         );
-        let normal = s.normal(&Tuple::point(
+        let normal = s.normal(Tuple::point(
             3_f64.sqrt() / 3.,
             3_f64.sqrt() / 3.,
             3_f64.sqrt() / 3.,
@@ -135,7 +134,7 @@ mod tests {
         let mut s = Sphere::new();
         s.set_transform(&Matrix::translation(0., 1., 0.));
         assert_eq!(
-            s.normal(&Tuple::point(0., 1.70711, -0.70711)),
+            s.normal(Tuple::point(0., 1.70711, -0.70711)),
             Tuple::vector(0., 0.70711, -0.70711)
         );
 
@@ -143,7 +142,7 @@ mod tests {
             &(Matrix::scaling(1., 0.5, 1.) * &Matrix::rotation_z(std::f64::consts::PI / 5.)),
         );
         assert_eq!(
-            s.normal(&Tuple::point(0., 2_f64.sqrt() / 2., -2_f64.sqrt() / 2.)),
+            s.normal(Tuple::point(0., 2_f64.sqrt() / 2., -2_f64.sqrt() / 2.)),
             Tuple::vector(0., 0.97014, -0.24254)
         );
     }

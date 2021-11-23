@@ -66,10 +66,10 @@ mod tests {
     fn translate() {
         let transform = Matrix::translation(5., -3., 2.);
         let p = Tuple::point(-3., 4., 5.);
-        assert_eq!(&transform * &p, Tuple::point(2., 1., 7.));
-        assert_eq!(&transform.inverse() * &p, Tuple::point(-8., 7., 3.));
+        assert_eq!(&transform * p, Tuple::point(2., 1., 7.));
+        assert_eq!(&transform.inverse() * p, Tuple::point(-8., 7., 3.));
         let v = Tuple::vector(-3., 4., 5.);
-        assert_eq!(&transform * &v, v);
+        assert_eq!(&transform * v, v);
     }
 
     #[test]
@@ -77,11 +77,11 @@ mod tests {
         let scaling = Matrix::scaling(2., 3., 4.);
         let p = Tuple::point(-4., 6., 8.);
         let v = Tuple::vector(-4., 6., 8.);
-        assert_eq!(&scaling * &p, Tuple::point(-8., 18., 32.));
-        assert_eq!(&scaling * &v, Tuple::vector(-8., 18., 32.));
-        assert_eq!(&scaling.inverse() * &v, Tuple::vector(-2., 2., 2.));
+        assert_eq!(&scaling * p, Tuple::point(-8., 18., 32.));
+        assert_eq!(&scaling * v, Tuple::vector(-8., 18., 32.));
+        assert_eq!(&scaling.inverse() * v, Tuple::vector(-2., 2., 2.));
         assert_eq!(
-            Matrix::scaling(-1., 1., 1.) * &Tuple::point(2., 3., 4.),
+            Matrix::scaling(-1., 1., 1.) * Tuple::point(2., 3., 4.),
             Tuple::point(-2., 3., 4.)
         );
     }
@@ -92,12 +92,12 @@ mod tests {
         let half_quarter = Matrix::rotation_x(PI / 4.);
         let full_quarter = Matrix::rotation_x(PI / 2.);
         assert_eq!(
-            &half_quarter * &p,
+            &half_quarter * p,
             Tuple::point(0., 2_f64.sqrt() / 2., 2_f64.sqrt() / 2.)
         );
-        assert_eq!(&full_quarter * &p, Tuple::point(0., 0., 1.));
+        assert_eq!(&full_quarter * p, Tuple::point(0., 0., 1.));
         assert_eq!(
-            &half_quarter.inverse() * &p,
+            &half_quarter.inverse() * p,
             Tuple::point(0., 2_f64.sqrt() / 2., -2_f64.sqrt() / 2.)
         );
 
@@ -105,36 +105,36 @@ mod tests {
         let half_quarter = Matrix::rotation_y(PI / 4.);
         let full_quarter = Matrix::rotation_y(PI / 2.);
         assert_eq!(
-            &half_quarter * &p,
+            &half_quarter * p,
             Tuple::point(2_f64.sqrt() / 2., 0., 2_f64.sqrt() / 2.)
         );
-        assert_eq!(&full_quarter * &p, Tuple::point(1., 0., 0.));
+        assert_eq!(&full_quarter * p, Tuple::point(1., 0., 0.));
 
         let p = Tuple::point(0., 1., 0.);
         let half_quarter = Matrix::rotation_z(PI / 4.);
         let full_quarter = Matrix::rotation_z(PI / 2.);
         assert_eq!(
-            &half_quarter * &p,
+            &half_quarter * p,
             Tuple::point(-2_f64.sqrt() / 2., 2_f64.sqrt() / 2., 0.)
         );
-        assert_eq!(&full_quarter * &p, Tuple::point(-1., 0., 0.));
+        assert_eq!(&full_quarter * p, Tuple::point(-1., 0., 0.));
     }
 
     #[test]
     fn shearing() {
         let shearing = Matrix::shearing(1., 0., 0., 0., 0., 0.);
         let p = Tuple::point(2., 3., 4.);
-        assert_eq!(&shearing * &p, Tuple::point(5., 3., 4.));
+        assert_eq!(&shearing * p, Tuple::point(5., 3., 4.));
         let shearing = Matrix::shearing(0., 1., 0., 0., 0., 0.);
-        assert_eq!(&shearing * &p, Tuple::point(6., 3., 4.));
+        assert_eq!(&shearing * p, Tuple::point(6., 3., 4.));
         let shearing = Matrix::shearing(0., 0., 1., 0., 0., 0.);
-        assert_eq!(&shearing * &p, Tuple::point(2., 5., 4.));
+        assert_eq!(&shearing * p, Tuple::point(2., 5., 4.));
         let shearing = Matrix::shearing(0., 0., 0., 1., 0., 0.);
-        assert_eq!(&shearing * &p, Tuple::point(2., 7., 4.));
+        assert_eq!(&shearing * p, Tuple::point(2., 7., 4.));
         let shearing = Matrix::shearing(0., 0., 0., 0., 1., 0.);
-        assert_eq!(&shearing * &p, Tuple::point(2., 3., 6.));
+        assert_eq!(&shearing * p, Tuple::point(2., 3., 6.));
         let shearing = Matrix::shearing(0., 0., 0., 0., 0., 1.);
-        assert_eq!(&shearing * &p, Tuple::point(2., 3., 7.));
+        assert_eq!(&shearing * p, Tuple::point(2., 3., 7.));
     }
 
     #[test]
@@ -144,13 +144,13 @@ mod tests {
         let b = Matrix::scaling(5., 5., 5.);
         let c = Matrix::translation(10., 5., 7.);
 
-        let p2 = &a * &p;
+        let p2 = &a * p;
         assert_eq!(p2, Tuple::point(1., -1., 0.));
-        let p3 = &b * &p2;
+        let p3 = &b * p2;
         assert_eq!(p3, Tuple::point(5., -5., 0.));
-        let p4 = &c * &p3;
+        let p4 = &c * p3;
         assert_eq!(p4, Tuple::point(15., 0., 7.));
 
-        assert_eq!(&c * &b * &a * &p, p4);
+        assert_eq!(&c * &b * &a * p, p4);
     }
 }

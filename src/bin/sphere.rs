@@ -1,4 +1,7 @@
-use raytracer::{canvas::Canvas, color::Color, light::PointLight, material::lighting, ray::Ray, sphere::Sphere, tuple::Tuple};
+use raytracer::{
+    canvas::Canvas, color::Color, light::PointLight, material::lighting, ray::Ray, sphere::Sphere,
+    tuple::Tuple,
+};
 
 fn main() {
     let mut c = Canvas::new(100, 100);
@@ -17,7 +20,7 @@ fn main() {
             let ray = Ray::new(origin, direction);
             if let Some(hit) = ray.intersect(&s).hit() {
                 let point = ray.position(hit.t);
-                let normal = hit.object.normal(&point);
+                let normal = hit.object.normal(point);
                 let eye = -ray.direction;
                 let color = lighting(hit.object.material(), &light, point, eye, normal);
                 c.write_pixel(col, row, color);

@@ -3,7 +3,7 @@ use crate::{material::Material, ray::Ray, tuple::Tuple};
 pub trait Intersect {
     fn intersect<'a>(&'a self, ray: &Ray) -> IntersectionList<'a>;
     fn as_ref(&self) -> &dyn Intersect;
-    fn normal(&self, point: &Tuple) -> Tuple;
+    fn normal(&self, point: Tuple) -> Tuple;
     fn material(&self) -> &Material;
 }
 

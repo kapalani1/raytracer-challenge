@@ -15,7 +15,7 @@ fn main() {
             &translation
                 * &scaling
                 * &Matrix::rotation_z(std::f64::consts::PI * 2. * i as f64 / 12.)
-                * x
+                * *x
         })
         .collect();
 

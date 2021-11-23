@@ -1,6 +1,8 @@
+use float_cmp::approx_eq;
+
 use crate::{color::Color, light::PointLight, tuple::Tuple};
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone)]
 pub struct Material {
     pub color: Color,
     pub ambient: f64,
@@ -18,6 +20,16 @@ impl Material {
             specular: 0.9,
             shininess: 200.,
         }
+    }
+}
+
+impl PartialEq for Material {
+    fn eq(&self, other: &Self) -> bool {
+        self.color == other.color
+            && approx_eq!(f64, self.ambient, other.ambient, epsilon = 0.00001)
+            && approx_eq!(f64, self.diffuse, other.diffuse, epsilon = 0.00001)
+            && approx_eq!(f64, self.specular, other.specular, epsilon = 0.00001)
+            && approx_eq!(f64, self.shininess, other.shininess, epsilon = 0.00001)
     }
 }
 
