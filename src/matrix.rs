@@ -50,6 +50,15 @@ impl Matrix {
     pub fn determinant(&self) -> f64 {
         if self.rows() == 2 {
             self.values[0][0] * self.values[1][1] - self.values[1][0] * self.values[0][1]
+        } else if self.rows() == 3 {
+            self.values[0][0]
+                * (self.values[1][1] * self.values[2][2] - self.values[2][1] * self.values[1][2])
+                - self.values[0][1]
+                    * (self.values[1][0] * self.values[2][2]
+                        - self.values[2][0] * self.values[1][2])
+                + self.values[0][2]
+                    * (self.values[1][0] * self.values[2][1]
+                        - self.values[2][0] * self.values[1][1])
         } else {
             self.values[0]
                 .iter()
@@ -104,11 +113,115 @@ impl Matrix {
     pub fn inverse(&self) -> Self {
         assert!(self.is_invertible());
         let mut inverse = Matrix::new(&vec![vec![0.; self.cols()]; self.rows()]);
-        let det = self.determinant();
+        if self.rows() == 4 {
+            // Fast path from https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
+            // Appears to be significantly faster
+            let a2323 =
+                self.values[2][2] * self.values[3][3] - self.values[2][3] * self.values[3][2];
+            let a1323 =
+                self.values[2][1] * self.values[3][3] - self.values[2][3] * self.values[3][1];
+            let a1223 =
+                self.values[2][1] * self.values[3][2] - self.values[2][2] * self.values[3][1];
+            let a0323 =
+                self.values[2][0] * self.values[3][3] - self.values[2][3] * self.values[3][0];
+            let a0223 =
+                self.values[2][0] * self.values[3][2] - self.values[2][2] * self.values[3][0];
+            let a0123 =
+                self.values[2][0] * self.values[3][1] - self.values[2][1] * self.values[3][0];
+            let a2313 =
+                self.values[1][2] * self.values[3][3] - self.values[1][3] * self.values[3][2];
+            let a1313 =
+                self.values[1][1] * self.values[3][3] - self.values[1][3] * self.values[3][1];
+            let a1213 =
+                self.values[1][1] * self.values[3][2] - self.values[1][2] * self.values[3][1];
+            let a2312 =
+                self.values[1][2] * self.values[2][3] - self.values[1][3] * self.values[2][2];
+            let a1312 =
+                self.values[1][1] * self.values[2][3] - self.values[1][3] * self.values[2][1];
+            let a1212 =
+                self.values[1][1] * self.values[2][2] - self.values[1][2] * self.values[2][1];
+            let a0313 =
+                self.values[1][0] * self.values[3][3] - self.values[1][3] * self.values[3][0];
+            let a0213 =
+                self.values[1][0] * self.values[3][2] - self.values[1][2] * self.values[3][0];
+            let a0312 =
+                self.values[1][0] * self.values[2][3] - self.values[1][3] * self.values[2][0];
+            let a0212 =
+                self.values[1][0] * self.values[2][2] - self.values[1][2] * self.values[2][0];
+            let a0113 =
+                self.values[1][0] * self.values[3][1] - self.values[1][1] * self.values[3][0];
+            let a0112 =
+                self.values[1][0] * self.values[2][1] - self.values[1][1] * self.values[2][0];
 
-        for row in 0..self.rows() {
-            for col in 0..self.cols() {
-                inverse.values[col][row] = 1. / det * self.cofactor(row, col);
+            let det = self.values[0][0]
+                * (self.values[1][1] * a2323 - self.values[1][2] * a1323
+                    + self.values[1][3] * a1223)
+                - self.values[0][1]
+                    * (self.values[1][0] * a2323 - self.values[1][2] * a0323
+                        + self.values[1][3] * a0223)
+                + self.values[0][2]
+                    * (self.values[1][0] * a1323 - self.values[1][1] * a0323
+                        + self.values[1][3] * a0123)
+                - self.values[0][3]
+                    * (self.values[1][0] * a1223 - self.values[1][1] * a0223
+                        + self.values[1][2] * a0123);
+            assert!(det != 0.);
+            let det = 1. / det;
+            inverse.values[0][0] = det
+                * (self.values[1][1] * a2323 - self.values[1][2] * a1323
+                    + self.values[1][3] * a1223);
+            inverse.values[0][1] = det
+                * -(self.values[0][1] * a2323 - self.values[0][2] * a1323
+                    + self.values[0][3] * a1223);
+            inverse.values[0][2] = det
+                * (self.values[0][1] * a2313 - self.values[0][2] * a1313
+                    + self.values[0][3] * a1213);
+            inverse.values[0][3] = det
+                * -(self.values[0][1] * a2312 - self.values[0][2] * a1312
+                    + self.values[0][3] * a1212);
+            inverse.values[1][0] = det
+                * -(self.values[1][0] * a2323 - self.values[1][2] * a0323
+                    + self.values[1][3] * a0223);
+            inverse.values[1][1] = det
+                * (self.values[0][0] * a2323 - self.values[0][2] * a0323
+                    + self.values[0][3] * a0223);
+            inverse.values[1][2] = det
+                * -(self.values[0][0] * a2313 - self.values[0][2] * a0313
+                    + self.values[0][3] * a0213);
+            inverse.values[1][3] = det
+                * (self.values[0][0] * a2312 - self.values[0][2] * a0312
+                    + self.values[0][3] * a0212);
+            inverse.values[2][0] = det
+                * (self.values[1][0] * a1323 - self.values[1][1] * a0323
+                    + self.values[1][3] * a0123);
+            inverse.values[2][1] = det
+                * -(self.values[0][0] * a1323 - self.values[0][1] * a0323
+                    + self.values[0][3] * a0123);
+            inverse.values[2][2] = det
+                * (self.values[0][0] * a1313 - self.values[0][1] * a0313
+                    + self.values[0][3] * a0113);
+            inverse.values[2][3] = det
+                * -(self.values[0][0] * a1312 - self.values[0][1] * a0312
+                    + self.values[0][3] * a0112);
+            inverse.values[3][0] = det
+                * -(self.values[1][0] * a1223 - self.values[1][1] * a0223
+                    + self.values[1][2] * a0123);
+            inverse.values[3][1] = det
+                * (self.values[0][0] * a1223 - self.values[0][1] * a0223
+                    + self.values[0][2] * a0123);
+            inverse.values[3][2] = det
+                * -(self.values[0][0] * a1213 - self.values[0][1] * a0213
+                    + self.values[0][2] * a0113);
+            inverse.values[3][3] = det
+                * (self.values[0][0] * a1212 - self.values[0][1] * a0212
+                    + self.values[0][2] * a0112);
+        } else {
+            let det = self.determinant();
+
+            for row in 0..self.rows() {
+                for col in 0..self.cols() {
+                    inverse.values[col][row] = 1. / det * self.cofactor(row, col);
+                }
             }
         }
 

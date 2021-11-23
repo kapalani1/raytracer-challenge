@@ -3,7 +3,7 @@ use crate::color::Color;
 pub struct Canvas {
     pub width: usize,
     pub height: usize,
-    pixels: Vec<Vec<Color>>,
+    pub pixels: Vec<Color>,
 }
 
 impl Canvas {
@@ -11,13 +11,14 @@ impl Canvas {
         Canvas {
             width,
             height,
-            pixels: vec![vec![Color::new(0., 0., 0.); width]; height],
+            pixels: vec![Color::new(0., 0., 0.); width * height],
         }
     }
 
     pub fn write_pixel(&mut self, x: usize, y: usize, color: Color) {
         // x dimension is width (cols) and y dimension is height (rows)
-        self.pixels[y][x] = color;
+        let index = y * self.width + x;
+        self.pixels[index] = color;
     }
 
     fn add_component_to_line(&self, line: &mut String, ppm: &mut String, component: u8) {
@@ -42,9 +43,9 @@ impl Canvas {
     fn write_ppm(&self) -> String {
         let mut ppm = String::new();
         ppm.push_str(format!("P3\n{} {}\n255\n", self.width, self.height).as_str());
-        for row in 0..self.height {
+        for chunk in self.pixels.chunks(self.width) {
             let mut line = String::new();
-            for pixel in &self.pixels[row] {
+            for pixel in chunk {
                 let mut scaled_pixel = pixel * 255.;
                 scaled_pixel.clamp();
                 self.add_component_to_line(&mut line, &mut ppm, scaled_pixel.red.round() as u8);
@@ -79,7 +80,7 @@ mod tests {
         assert_eq!(c.height, 20);
         for i in 0..c.height {
             for j in 0..c.width {
-                assert_eq!(c.pixels[i][j], Color::new(0., 0., 0.));
+                assert_eq!(c.pixels[i * c.width + j], Color::new(0., 0., 0.));
             }
         }
     }
@@ -93,9 +94,9 @@ mod tests {
         for x in 0..c.width {
             for y in 0..c.height {
                 if x == 2 && y == 3 {
-                    assert_eq!(c.pixels[y][x], Color::new(1., 0., 0.))
+                    assert_eq!(c.pixels[y * c.width + x], Color::new(1., 0., 0.))
                 } else {
-                    assert_eq!(c.pixels[y][x], Color::new(0., 0., 0.))
+                    assert_eq!(c.pixels[y * c.width + x], Color::new(0., 0., 0.))
                 }
             }
         }
