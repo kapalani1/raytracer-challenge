@@ -1,7 +1,4 @@
-use crate::{
-    color::Color, light::PointLight, material::Material, matrix::Matrix, sphere::Sphere,
-    tuple::Tuple,
-};
+use crate::{color::Color, light::PointLight, material::Material, matrix::Matrix, ray::Ray, sphere::Sphere, tuple::Tuple};
 
 #[derive(Debug, Clone)]
 pub struct World {
@@ -27,11 +24,27 @@ impl World {
 
         World::new(vec![s1, s2], vec![light])
     }
+
+    pub fn is_shadowed(&self, point: Tuple) -> bool {
+      assert!(point.is_point());
+      assert_eq!(self.lights.len(), 1);
+      let v = self.lights[0].position - point;
+      let distance = v.magnitude();
+      let direction = v.normalize();
+
+      let r = Ray::new(point, direction);
+      let i = r.project_into_world(&self);
+      let hit = i.hit();
+      match hit {
+        Some(h) => if h.t < distance { true } else { false }
+        None => false
+      }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::ray::Ray;
+    use crate::{ray::Ray};
 
     use super::*;
     #[test]
@@ -63,5 +76,18 @@ mod tests {
         assert_eq!(xs.intersections[1].t, 4.5);
         assert_eq!(xs.intersections[2].t, 5.5);
         assert_eq!(xs.intersections[3].t, 6.);
+    }
+
+    #[test]
+    fn shadows() {
+      let w = World::default();
+      let p = Tuple::point(0., 10., 0.);
+      assert!(!w.is_shadowed(p));
+      let p = Tuple::point(10., -10., 10.);
+      assert!(w.is_shadowed(p));
+      let p = Tuple::point(-20., -20., -20.);
+      assert!(!w.is_shadowed(p));
+      let p = Tuple::point(-2., 2., 2.);
+      assert!(!w.is_shadowed(p));
     }
 }

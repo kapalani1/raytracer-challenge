@@ -74,8 +74,7 @@ impl Matrix {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tuple::Tuple;
-    use std::f64::consts::PI;
+    use crate::{tuple::Tuple, PI};
 
     #[test]
     fn translate() {

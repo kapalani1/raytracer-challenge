@@ -1,6 +1,6 @@
 use rayon::prelude::*;
 use raytracer::{
-    canvas::Canvas, color::Color, light::PointLight, ray::Ray, sphere::Sphere, tuple::Tuple,
+    canvas::Canvas, color::Color, light::PointLight, ray::Ray, sphere::Sphere, tuple::Tuple
 };
 
 fn main() {
@@ -26,7 +26,7 @@ fn main() {
                 let point = ray.position(hit.t);
                 let normal = hit.object.normal(point);
                 let eye = -ray.direction;
-                *color = hit.object.material().lighting(&light, point, eye, normal);
+                *color = hit.object.material().lighting(&light, point, eye, normal, false);
             }
         });
 

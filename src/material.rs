@@ -1,6 +1,5 @@
 use float_cmp::approx_eq;
-
-use crate::{color::Color, light::PointLight, tuple::Tuple};
+use crate::{color::Color, light::PointLight, tuple::Tuple, EPSILON};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Material {
@@ -28,6 +27,7 @@ impl Material {
         point: Tuple,
         eye_vector: Tuple,
         normal_vector: Tuple,
+        in_shadow: bool,
     ) -> Color {
         assert!(point.is_point());
         assert!(eye_vector.is_vector());
@@ -44,7 +44,7 @@ impl Material {
         let mut diffuse = Color::new(0., 0., 0.);
         let mut specular = Color::new(0., 0., 0.);
 
-        if light_dot_normal >= 0. {
+        if !in_shadow && light_dot_normal >= 0. {
             // Diffuse contribution depends on angle between light and point
             diffuse = effective_color * self.diffuse * light_dot_normal;
 
@@ -64,10 +64,10 @@ impl Material {
 impl PartialEq for Material {
     fn eq(&self, other: &Self) -> bool {
         self.color == other.color
-            && approx_eq!(f64, self.ambient, other.ambient, epsilon = 0.00001)
-            && approx_eq!(f64, self.diffuse, other.diffuse, epsilon = 0.00001)
-            && approx_eq!(f64, self.specular, other.specular, epsilon = 0.00001)
-            && approx_eq!(f64, self.shininess, other.shininess, epsilon = 0.00001)
+            && approx_eq!(f64, self.ambient, other.ambient, epsilon = EPSILON)
+            && approx_eq!(f64, self.diffuse, other.diffuse, epsilon = EPSILON)
+            && approx_eq!(f64, self.specular, other.specular, epsilon = EPSILON)
+            && approx_eq!(f64, self.shininess, other.shininess, epsilon = EPSILON)
     }
 }
 
@@ -82,31 +82,37 @@ mod tests {
         let eye_vector = Tuple::vector(0., 0., -1.);
         let normal_vector = Tuple::vector(0., 0., -1.);
         let light = PointLight::new(Tuple::point(0., 0., -10.), Color::new(1., 1., 1.));
-        let result = m.lighting(&light, position, eye_vector, normal_vector);
+        let result = m.lighting(&light, position, eye_vector, normal_vector, false);
         assert_eq!(result, Color::new(1.9, 1.9, 1.9));
 
         let eye_vector = Tuple::vector(0., 2_f64.sqrt() / 2., -2_f64.sqrt() / 2.);
         let normal_vector = Tuple::vector(0., 0., -1.);
         let light = PointLight::new(Tuple::point(0., 0., -10.), Color::new(1., 1., 1.));
-        let result = m.lighting(&light, position, eye_vector, normal_vector);
+        let result = m.lighting(&light, position, eye_vector, normal_vector, false);
         assert_eq!(result, Color::new(1.0, 1.0, 1.0));
 
         let eye_vector = Tuple::vector(0., 0., -1.);
         let normal_vector = Tuple::vector(0., 0., -1.);
         let light = PointLight::new(Tuple::point(0., 10., -10.), Color::new(1., 1., 1.));
-        let result = m.lighting(&light, position, eye_vector, normal_vector);
+        let result = m.lighting(&light, position, eye_vector, normal_vector, false);
         assert_eq!(result, Color::new(0.7364, 0.7364, 0.7364));
 
         let eye_vector = Tuple::vector(0., -2_f64.sqrt() / 2., -2_f64.sqrt() / 2.);
         let normal_vector = Tuple::vector(0., 0., -1.);
         let light = PointLight::new(Tuple::point(0., 10., -10.), Color::new(1., 1., 1.));
-        let result = m.lighting(&light, position, eye_vector, normal_vector);
+        let result = m.lighting(&light, position, eye_vector, normal_vector, false);
         assert_eq!(result, Color::new(1.6364, 1.6364, 1.6364));
 
         let eye_vector = Tuple::vector(0., 0., -1.);
         let normal_vector = Tuple::vector(0., 0., -1.);
         let light = PointLight::new(Tuple::point(0., 0., 10.), Color::new(1., 1., 1.));
-        let result = m.lighting(&light, position, eye_vector, normal_vector);
+        let result = m.lighting(&light, position, eye_vector, normal_vector, false);
+        assert_eq!(result, Color::new(0.1, 0.1, 0.1));
+
+        let eye_vector = Tuple::vector(0., 0., -1.);
+        let normal_vector = Tuple::vector(0., 0., -1.);
+        let light = PointLight::new(Tuple::point(0., 0., -10.), Color::new(1., 1., 1.));
+        let result = m.lighting(&light, position, eye_vector, normal_vector, true);
         assert_eq!(result, Color::new(0.1, 0.1, 0.1));
     }
 }

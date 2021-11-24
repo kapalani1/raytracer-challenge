@@ -2,9 +2,7 @@ use std::{
     ops::{Add, AddAssign, Div, Mul, Neg, Sub},
     vec,
 };
-
 use float_cmp::approx_eq;
-
 use crate::matrix::Matrix;
 
 #[derive(Debug, Clone, Copy)]

@@ -1,4 +1,4 @@
-use crate::{color::Color, material::Material, ray::Ray, tuple::Tuple, world::World};
+use crate::{EPSILON, color::Color, material::Material, ray::Ray, tuple::Tuple, world::World};
 use std::{cmp::Ord, ops::Add};
 
 pub trait Intersect {
@@ -16,6 +16,8 @@ pub struct Intersection<'a> {
     pub eye_vector: Tuple,
     pub normal_vector: Tuple,
     pub inside: bool,
+    pub over_point: Tuple,
+
 }
 
 impl<'a> Intersection<'a> {
@@ -33,6 +35,7 @@ impl<'a> Intersection<'a> {
         } else {
             object.normal(point)
         };
+        let over_point = point + normal_vector * EPSILON;
 
         Intersection {
             t,
@@ -41,16 +44,19 @@ impl<'a> Intersection<'a> {
             eye_vector,
             normal_vector,
             inside,
+            over_point
         }
     }
 
     pub fn shade(&self, world: &World) -> Color {
         assert_eq!(world.lights.len(), 1);
+        let in_shadow = world.is_shadowed(self.over_point);
         self.object.material().lighting(
             &world.lights[0],
-            self.point,
+            self.over_point,
             self.eye_vector,
             self.normal_vector,
+            in_shadow
         )
     }
 }
@@ -132,7 +138,7 @@ impl<'a> Add for IntersectionList<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{light::PointLight, sphere::Sphere, world::World};
+    use crate::{light::PointLight, matrix::Matrix, sphere::Sphere, world::World};
 
     #[test]
     pub fn intersection() {
@@ -236,5 +242,16 @@ mod tests {
         let i = r.intersect(shape);
         let i = i.hit().unwrap();
         assert_eq!(i.shade(&w), Color::new(0.90498, 0.90498, 0.90498));
+    }
+
+    #[test]
+    fn hit_offset_point() {
+      let r = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
+      let mut shape = Sphere::new(None);
+      shape.set_transform(&Matrix::translation(0., 0., 1.));
+      let i = r.intersect(&shape);
+      let hit = i.hit().unwrap();
+      assert!(hit.over_point.z < -EPSILON / 2.);
+      assert!(hit.point.z > hit.over_point.z);
     }
 }

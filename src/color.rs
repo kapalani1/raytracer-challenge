@@ -1,5 +1,6 @@
 use float_cmp::approx_eq;
 use std::ops::{Add, Mul, Sub};
+use crate::EPSILON;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Color {
@@ -82,9 +83,9 @@ impl<'a> Mul<f64> for &'a Color {
 
 impl PartialEq for Color {
     fn eq(&self, other: &Self) -> bool {
-        approx_eq!(f64, self.red, other.red, epsilon = 0.00001)
-            && approx_eq!(f64, self.green, other.green, epsilon = 0.00001)
-            && approx_eq!(f64, self.blue, other.blue, epsilon = 0.00001)
+        approx_eq!(f64, self.red, other.red, epsilon = EPSILON)
+            && approx_eq!(f64, self.green, other.green, epsilon = EPSILON)
+            && approx_eq!(f64, self.blue, other.blue, epsilon = EPSILON)
     }
 }
 

@@ -67,30 +67,29 @@ impl Camera {
 #[cfg(test)]
 mod tests {
     use float_cmp::approx_eq;
-
-    use crate::color::Color;
+    use crate::{PI, EPSILON, color::Color};
 
     use super::*;
     #[test]
     fn camera() {
-        let c = Camera::new(160, 120, std::f64::consts::FRAC_PI_2);
+        let c = Camera::new(160, 120, PI / 2.);
         assert_eq!(c.hsize, 160);
         assert_eq!(c.vsize, 120);
-        assert_eq!(c.field_of_view, std::f64::consts::PI / 2.);
+        assert_eq!(c.field_of_view, PI / 2.);
         assert_eq!(c.transform, Matrix::identity(4));
     }
 
     #[test]
     fn pixel_size() {
-        let c = Camera::new(200, 125, std::f64::consts::PI / 2.);
-        approx_eq!(f64, c.pixel_size, 0.01, epsilon = 0.00001);
-        let c = Camera::new(125, 200, std::f64::consts::PI / 2.);
-        approx_eq!(f64, c.pixel_size, 0.01, epsilon = 0.00001);
+        let c = Camera::new(200, 125, PI / 2.);
+        approx_eq!(f64, c.pixel_size, 0.01, epsilon = EPSILON);
+        let c = Camera::new(125, 200, PI / 2.);
+        approx_eq!(f64, c.pixel_size, 0.01, epsilon = EPSILON);
     }
 
     #[test]
     fn camera_ray() {
-        let mut c = Camera::new(201, 101, std::f64::consts::PI / 2.);
+        let mut c = Camera::new(201, 101, PI / 2.);
         let r = c.project_ray(100, 50);
         assert_eq!(
             r,
@@ -106,7 +105,7 @@ mod tests {
         );
 
         c.transform =
-            Matrix::rotation_y(std::f64::consts::PI / 4.) * &Matrix::translation(0., -2., 5.);
+            Matrix::rotation_y(PI / 4.) * &Matrix::translation(0., -2., 5.);
         let r = c.project_ray(100, 50);
         assert_eq!(
             r,
@@ -120,7 +119,7 @@ mod tests {
     #[test]
     fn render() {
         let w = World::default();
-        let mut c = Camera::new(11, 11, std::f64::consts::PI / 2.);
+        let mut c = Camera::new(11, 11, PI / 2.);
         let from = Tuple::point(0., 0., -5.);
         let to = Tuple::point(0., 0., 0.);
         let up = Tuple::vector(0., 1., 0.);

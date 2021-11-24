@@ -1,4 +1,5 @@
 use std::ops::{Index, Mul};
+use crate::EPSILON;
 
 use float_cmp::approx_eq;
 
@@ -294,7 +295,7 @@ impl PartialEq for Matrix {
                         f64,
                         self.values[row][col],
                         other.values[row][col],
-                        epsilon = 0.00001
+                        epsilon = EPSILON
                     ) {
                         return false;
                     }

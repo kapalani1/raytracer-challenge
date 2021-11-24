@@ -78,6 +78,7 @@ impl Intersect for Sphere {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::PI;
 
     #[test]
     fn sphere() {
@@ -145,7 +146,7 @@ mod tests {
         );
 
         s.set_transform(
-            &(Matrix::scaling(1., 0.5, 1.) * &Matrix::rotation_z(std::f64::consts::PI / 5.)),
+            &(Matrix::scaling(1., 0.5, 1.) * &Matrix::rotation_z(PI / 5.)),
         );
         assert_eq!(
             s.normal(Tuple::point(0., 2_f64.sqrt() / 2., -2_f64.sqrt() / 2.)),

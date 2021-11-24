@@ -1,4 +1,4 @@
-use raytracer::{canvas::Canvas, color::Color, matrix::Matrix, tuple::Tuple};
+use raytracer::{canvas::Canvas, color::Color, matrix::Matrix, tuple::Tuple, PI};
 
 fn main() {
     let mut c = Canvas::new(500, 500);
@@ -14,7 +14,7 @@ fn main() {
         .map(|(i, x)| {
             &translation
                 * &scaling
-                * &Matrix::rotation_z(std::f64::consts::PI * 2. * i as f64 / 12.)
+                * &Matrix::rotation_z(PI * 2. * i as f64 / 12.)
                 * *x
         })
         .collect();

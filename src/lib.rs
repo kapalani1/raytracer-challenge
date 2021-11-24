@@ -10,3 +10,6 @@ pub mod sphere;
 pub mod transformations;
 pub mod tuple;
 pub mod world;
+
+pub const EPSILON: f64 = 0.00001;
+pub const PI: f64 = std::f64::consts::PI;

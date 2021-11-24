@@ -1,6 +1,6 @@
 use raytracer::{
     camera::Camera, color::Color, light::PointLight, material::Material, matrix::Matrix,
-    sphere::Sphere, tuple::Tuple, world::World,
+    sphere::Sphere, tuple::Tuple, world::World, PI
 };
 
 fn main() {
@@ -13,16 +13,16 @@ fn main() {
     let mut left_wall = Sphere::new(Some(material));
     left_wall.set_transform(
         &(&Matrix::translation(0., 0., 5.)
-            * &Matrix::rotation_y(-std::f64::consts::PI / 4.)
-            * &Matrix::rotation_x(std::f64::consts::PI / 2.)
+            * &Matrix::rotation_y(-PI / 4.)
+            * &Matrix::rotation_x(PI / 2.)
             * &Matrix::scaling(10., 0.01, 10.)),
     );
 
     let mut right_wall = Sphere::new(Some(material));
     right_wall.set_transform(
         &(&Matrix::translation(0., 0., 5.)
-            * &Matrix::rotation_y(std::f64::consts::PI / 4.)
-            * &Matrix::rotation_x(std::f64::consts::PI / 2.)
+            * &Matrix::rotation_y(PI / 4.)
+            * &Matrix::rotation_x(PI / 2.)
             * &Matrix::scaling(10., 0.01, 10.)),
     );
 
@@ -55,7 +55,7 @@ fn main() {
         vec![floor, left_wall, right_wall, middle, right, left],
         vec![light],
     );
-    let mut camera = Camera::new(1000, 500, std::f64::consts::PI / 3.);
+    let mut camera = Camera::new(800, 400, PI / 3.);
     camera.transform = Matrix::view_transform(
         Tuple::point(0., 1.5, -5.),
         Tuple::point(0., 1., 0.),
@@ -63,5 +63,5 @@ fn main() {
     );
 
     let canvas = camera.render(&world);
-    canvas.save_ppm("world.ppm");
+    canvas.save_ppm("world_shadow.ppm");
 }
