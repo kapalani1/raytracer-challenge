@@ -1,7 +1,7 @@
 use crate::color::Color;
 use crate::tuple::Tuple;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct PointLight {
     pub intensity: Color,
     pub position: Tuple,
@@ -9,6 +9,7 @@ pub struct PointLight {
 
 impl PointLight {
     pub fn new(position: Tuple, intensity: Color) -> Self {
+        assert!(position.is_point());
         Self {
             intensity,
             position,

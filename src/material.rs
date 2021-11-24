@@ -29,14 +29,23 @@ impl Material {
         eye_vector: Tuple,
         normal_vector: Tuple,
     ) -> Color {
+        assert!(point.is_point());
+        assert!(eye_vector.is_vector());
+        assert!(normal_vector.is_vector());
+        // Haddamard multiplication of material and light
         let effective_color = self.color * light.intensity;
+        // Direction to light source
         let light_vector = (light.position - point).normalize();
+        // Constant ambient contribution
         let ambient = effective_color * self.ambient;
+        // If light is in front this quantity is positive else negative
         let light_dot_normal = light_vector.dot(&normal_vector);
+
         let mut diffuse = Color::new(0., 0., 0.);
         let mut specular = Color::new(0., 0., 0.);
 
         if light_dot_normal >= 0. {
+            // Diffuse contribution depends on angle between light and point
             diffuse = effective_color * self.diffuse * light_dot_normal;
 
             let reflect_vector = -light_vector.reflect(&normal_vector);

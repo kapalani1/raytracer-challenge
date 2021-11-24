@@ -1,4 +1,4 @@
-use crate::matrix::Matrix;
+use crate::{matrix::Matrix, tuple::Tuple};
 
 impl Matrix {
     pub fn translation(x: f64, y: f64, z: f64) -> Matrix {
@@ -53,6 +53,21 @@ impl Matrix {
         shearing.values[2][0] = z_x;
         shearing.values[2][1] = z_y;
         shearing
+    }
+
+    pub fn view_transform(from: Tuple, to: Tuple, up: Tuple) -> Matrix {
+        assert!(from.is_point());
+        assert!(to.is_point());
+        assert!(up.is_vector());
+        let forward = (to - from).normalize();
+        let left = forward.cross(&up.normalize());
+        let true_up = left.cross(&forward);
+        Matrix::new(&vec![
+            vec![left.x, left.y, left.z, 0.],
+            vec![true_up.x, true_up.y, true_up.z, 0.],
+            vec![-forward.x, -forward.y, -forward.z, 0.],
+            vec![0., 0., 0., 1.],
+        ]) * &Matrix::translation(-from.x, -from.y, -from.z)
     }
 }
 
@@ -152,5 +167,40 @@ mod tests {
         assert_eq!(p4, Tuple::point(15., 0., 7.));
 
         assert_eq!(&c * &b * &a * p, p4);
+    }
+
+    #[test]
+    fn view_transform() {
+        let from = Tuple::point(0., 0., 0.);
+        let to = Tuple::point(0., 0., -1.);
+        let up = Tuple::vector(0., 1., 0.);
+        let t = Matrix::view_transform(from, to, up);
+        assert_eq!(t, Matrix::identity(4));
+
+        let from = Tuple::point(0., 0., 0.);
+        let to = Tuple::point(0., 0., 1.);
+        let up = Tuple::vector(0., 1., 0.);
+        let t = Matrix::view_transform(from, to, up);
+        assert_eq!(t, Matrix::scaling(-1., 1., -1.));
+
+        let from = Tuple::point(0., 0., 8.);
+        let to = Tuple::point(0., 0., 0.);
+        let up = Tuple::vector(0., 1., 0.);
+        let t = Matrix::view_transform(from, to, up);
+        assert_eq!(t, Matrix::translation(0., 0., -8.));
+
+        let from = Tuple::point(1., 3., 2.);
+        let to = Tuple::point(4., -2., 8.);
+        let up = Tuple::vector(1., 1., 0.);
+        let t = Matrix::view_transform(from, to, up);
+        assert_eq!(
+            t,
+            Matrix::new(&vec![
+                vec![-0.50709, 0.50709, 0.67612, -2.36643],
+                vec![0.76772, 0.60609, 0.12122, -2.82843],
+                vec![-0.35857, 0.59761, -0.71714, 0.00000],
+                vec![0.00000, 0.00000, 0.00000, 1.00000],
+            ])
+        );
     }
 }

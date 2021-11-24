@@ -21,6 +21,11 @@ impl Canvas {
         self.pixels[index] = color;
     }
 
+    pub fn get_pixel(&self, x: usize, y: usize) -> Color {
+        let index = y * self.width + x;
+        self.pixels[index]
+    }
+
     fn add_component_to_line(&self, line: &mut String, ppm: &mut String, component: u8) {
         let c = format!("{}", component);
         if line.len() == 0 {

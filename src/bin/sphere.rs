@@ -7,7 +7,7 @@ fn main() {
     let mut c = Canvas::new(500, 500);
     let wall_height = 7.;
     let origin = Tuple::point(0., 0., -5.);
-    let mut s = Sphere::new();
+    let mut s = Sphere::new(None);
     s.material.color = Color::new(1., 0.2, 1.);
     let light = PointLight::new(Tuple::point(-10., 10., -10.), Color::new(1., 1., 1.));
 

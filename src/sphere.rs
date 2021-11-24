@@ -4,7 +4,7 @@ use crate::matrix::Matrix;
 use crate::ray::Ray;
 use crate::tuple::Tuple;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Sphere {
     pub center: Tuple,
     pub radius: f64,
@@ -13,12 +13,17 @@ pub struct Sphere {
 }
 
 impl Sphere {
-    pub fn new() -> Self {
+    pub fn new(material: Option<Material>) -> Self {
+        let material = match material {
+            Some(x) => x,
+            None => Material::new(),
+        };
+
         Sphere {
             center: Tuple::point(0., 0., 0.),
             radius: 1.,
             transform: Matrix::identity(4),
-            material: Material::new(),
+            material,
         }
     }
 
@@ -29,10 +34,10 @@ impl Sphere {
 
 impl Intersect for Sphere {
     fn intersect(&self, ray: &Ray) -> IntersectionList {
-        let ray = ray.transform(&self.transform.inverse());
-        let sphere_to_ray = ray.origin - self.center;
-        let a = ray.direction.dot(&ray.direction);
-        let b = 2. * ray.direction.dot(&sphere_to_ray);
+        let ray_obj_space = ray.transform(&self.transform.inverse());
+        let sphere_to_ray = ray_obj_space.origin - self.center;
+        let a = ray_obj_space.direction.dot(&ray_obj_space.direction);
+        let b = 2. * ray_obj_space.direction.dot(&sphere_to_ray);
         let c = sphere_to_ray.dot(&sphere_to_ray) - 1.;
         let discriminant = b * b - 4. * a * c;
 
@@ -42,8 +47,8 @@ impl Intersect for Sphere {
             let t1 = (-b - discriminant.sqrt()) / (2. * a);
             let t2 = (-b + discriminant.sqrt()) / (2. * a);
             IntersectionList::new(vec![
-                Intersection::new(t1, self),
-                Intersection::new(t2, self),
+                Intersection::new(t1, self, Some(ray)),
+                Intersection::new(t2, self, Some(ray)),
             ])
         }
     }
@@ -53,6 +58,7 @@ impl Intersect for Sphere {
     }
 
     fn normal(&self, point: Tuple) -> Tuple {
+        assert!(point.is_point());
         let object_space_point = self.transform.inverse() * point;
         let object_normal = Tuple::vector(
             object_space_point.x,
@@ -75,7 +81,7 @@ mod tests {
 
     #[test]
     fn sphere() {
-        let mut s = Sphere::new();
+        let mut s = Sphere::new(None);
         assert_eq!(s.transform, Matrix::identity(4));
         assert_eq!(s.material, Material::new());
         let m = Matrix::translation(2., 3., 4.);
@@ -90,7 +96,7 @@ mod tests {
     #[test]
     fn ray_sphere_intersection() {
         let r = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
-        let mut s = Sphere::new();
+        let mut s = Sphere::new(None);
         s.set_transform(&Matrix::scaling(2., 2., 2.));
         let i = r.intersect(&s);
         assert_eq!(i.intersections.len(), 2);
@@ -104,7 +110,7 @@ mod tests {
 
     #[test]
     fn normal() {
-        let s = Sphere::new();
+        let s = Sphere::new(None);
         assert_eq!(
             s.normal(Tuple::point(1., 0., 0.)),
             Tuple::vector(1., 0., 0.)
@@ -131,7 +137,7 @@ mod tests {
 
     #[test]
     fn normal_translated() {
-        let mut s = Sphere::new();
+        let mut s = Sphere::new(None);
         s.set_transform(&Matrix::translation(0., 1., 0.));
         assert_eq!(
             s.normal(Tuple::point(0., 1.70711, -0.70711)),
