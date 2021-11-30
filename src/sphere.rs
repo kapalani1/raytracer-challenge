@@ -63,6 +63,22 @@ impl Shape for Sphere {
         }
     }
 
+    fn local_intersect(&self, ray_obj_space: &Ray) -> Vec<(f64, &dyn Shape)> {
+        let sphere_to_ray = ray_obj_space.origin - self.center;
+        let a = ray_obj_space.direction.dot(&ray_obj_space.direction);
+        let b = 2. * ray_obj_space.direction.dot(&sphere_to_ray);
+        let c = sphere_to_ray.dot(&sphere_to_ray) - 1.;
+        let discriminant = b * b - 4. * a * c;
+
+        if discriminant < 0. {
+            vec![]
+        } else {
+            let t1 = (-b - discriminant.sqrt()) / (2. * a);
+            let t2 = (-b + discriminant.sqrt()) / (2. * a);
+            vec![(t1, self), (t2, self)]
+        }
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }

@@ -7,11 +7,11 @@ use crate::{
 pub trait Shape: Send + Sync {
     fn local_normal(&self, point: Tuple) -> Tuple;
     fn material_mut(&mut self) -> &mut Material;
-    fn intersect(&self, ray: &Ray) -> IntersectionList;
     fn as_any(&self) -> &dyn Any;
     fn material(&self) -> &Material;
     fn transform(&self) -> &Matrix;
     fn set_transform(&mut self, m: &Matrix);
+    fn local_intersect(&self, ray_obj_space: &Ray) -> Vec<(f64, &dyn Shape)>;
 
     fn normal_at(&self, point: Tuple) -> Tuple {
         assert!(point.is_point());
@@ -20,6 +20,16 @@ pub trait Shape: Send + Sync {
         let mut world_normal = self.transform().inverse().transpose() * object_normal;
         world_normal.w = 0.;
         world_normal.normalize()
+    }
+
+    fn intersect(&self, ray: &Ray) -> IntersectionList {
+        let ray_obj_space = ray.transform(&self.transform().inverse());
+        IntersectionList::new(
+            self.local_intersect(&ray_obj_space)
+                .iter()
+                .map(|i| Intersection::new(i.0, i.1, Some(ray)))
+                .collect(),
+        )
     }
 }
 
@@ -50,6 +60,10 @@ impl Shape for Box<dyn Shape> {
 
     fn set_transform(&mut self, m: &Matrix) {
         self.as_mut().set_transform(m);
+    }
+
+    fn local_intersect(&self, ray_obj_space: &Ray) -> Vec<(f64, &dyn Shape)> {
+        self.as_ref().local_intersect(ray_obj_space)
     }
 }
 

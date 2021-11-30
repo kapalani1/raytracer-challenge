@@ -46,6 +46,15 @@ impl Shape for Plane {
         }
     }
 
+    fn local_intersect(&self, ray_obj_space: &Ray) -> Vec<(f64, &dyn Shape)> {
+        if ray_obj_space.direction.y.abs() < EPSILON {
+            vec![]
+        } else {
+            let t = -ray_obj_space.origin.y / ray_obj_space.direction.y;
+            vec![(t, self)]
+        }
+    }
+
     fn as_any(&self) -> &dyn Any {
         self
     }
