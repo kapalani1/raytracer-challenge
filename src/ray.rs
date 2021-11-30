@@ -34,12 +34,12 @@ impl Ray {
             .reduce(|| IntersectionList::new(vec![]), |i1, i2| i1 + i2)
     }
 
-    pub fn color_at(&self, world: &World) -> Color {
+    pub fn color_at(&self, world: &World, remaining: u8) -> Color {
         let i = self.project_into_world(world);
         let hit = i.hit();
         match hit {
             None => Color::new(0., 0., 0.),
-            Some(h) => h.shade(world),
+            Some(h) => h.context(self, Some(&i)).shade_hit(world, remaining),
         }
     }
 
@@ -53,7 +53,7 @@ impl Ray {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{light::PointLight, material::Material, sphere::Sphere};
+    use crate::{light::PointLight, material::Material, shape::MAX_REFLECTIONS, sphere::Sphere};
 
     #[test]
     fn ray() {
@@ -132,11 +132,11 @@ mod tests {
     fn test_world_color() {
         let w = World::default();
         let r = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 1., 0.));
-        let c = r.color_at(&w);
+        let c = r.color_at(&w, MAX_REFLECTIONS);
         assert_eq!(c, Color::new(0., 0., 0.));
 
         let r = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
-        let c = r.color_at(&w);
+        let c = r.color_at(&w, MAX_REFLECTIONS);
         assert_eq!(c, Color::new(0.38066, 0.47583, 0.2855));
     }
 
@@ -157,7 +157,7 @@ mod tests {
 
         let w = World::new(vec![Box::new(s1), Box::new(s2)], vec![light]);
         let r = Ray::new(Tuple::point(0., 0., 0.75), Tuple::vector(0., 0., -1.));
-        let c = r.color_at(&w);
+        let c = r.color_at(&w, MAX_REFLECTIONS);
         assert_eq!(c, w.objects[1].material().color);
     }
 }

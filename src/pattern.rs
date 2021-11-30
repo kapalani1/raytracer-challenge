@@ -88,7 +88,6 @@ impl GradientPattern {
     }
 
     pub fn color_at(&self, point: Tuple) -> Color {
-        println!("{:?} vs {:?}", point.x, point.x.floor());
         self.a + (self.b - self.a) * (point.x - point.x.floor())
     }
 }

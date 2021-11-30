@@ -1,4 +1,6 @@
-use crate::{canvas::Canvas, matrix::Matrix, ray::Ray, tuple::Tuple, world::World};
+use crate::{
+    canvas::Canvas, matrix::Matrix, ray::Ray, shape::MAX_REFLECTIONS, tuple::Tuple, world::World,
+};
 use rayon::prelude::*;
 
 pub struct Camera {
@@ -57,7 +59,7 @@ impl Camera {
                 let row = index / canvas.width;
                 let col = index % canvas.width;
                 let ray = self.project_ray(col, row);
-                *color = ray.color_at(&world);
+                *color = ray.color_at(&world, MAX_REFLECTIONS);
             });
 
         canvas

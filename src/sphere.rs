@@ -3,7 +3,7 @@ use std::any::Any;
 use crate::material::Material;
 use crate::matrix::Matrix;
 use crate::ray::Ray;
-use crate::shape::{Intersection, IntersectionList, Shape};
+use crate::shape::{Shape};
 use crate::tuple::Tuple;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -27,6 +27,13 @@ impl Sphere {
             transform: Matrix::identity(4),
             material,
         }
+    }
+
+    pub fn glass_new() -> Self {
+        let mut material = Material::new();
+        material.transparency = 1.;
+        material.refractive_index = 1.5;
+        Sphere::new(Some(material))
     }
 }
 
@@ -151,5 +158,12 @@ mod tests {
             s.normal_at(Tuple::point(0., 2_f64.sqrt() / 2., -2_f64.sqrt() / 2.)),
             Tuple::vector(0., 0.97014, -0.24254)
         );
+    }
+
+    #[test]
+    fn glass_sphere() {
+        let s = Sphere::glass_new();
+        assert_eq!(s.material().transparency, 1.);
+        assert_eq!(s.material().refractive_index, 1.5);
     }
 }

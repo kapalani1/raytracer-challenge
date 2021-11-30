@@ -3,7 +3,7 @@ use std::any::Any;
 use crate::material::Material;
 use crate::matrix::Matrix;
 use crate::ray::Ray;
-use crate::shape::{Intersection, IntersectionList, Shape};
+use crate::shape::Shape;
 use crate::tuple::Tuple;
 use crate::EPSILON;
 

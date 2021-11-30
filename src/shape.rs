@@ -1,8 +1,8 @@
 use std::{any::Any, ops::Add};
 
-use crate::{
-    color::Color, material::Material, matrix::Matrix, ray::Ray, tuple::Tuple, world::World, EPSILON,
-};
+use crate::{EPSILON, intersection::IntersectionContext, material::Material, matrix::Matrix, ray::Ray, tuple::Tuple};
+
+pub const MAX_REFLECTIONS: u8 = 4;
 
 pub trait Shape: Send + Sync {
     fn local_normal(&self, point: Tuple) -> Tuple;
@@ -27,7 +27,7 @@ pub trait Shape: Send + Sync {
         IntersectionList::new(
             self.local_intersect(&ray_obj_space)
                 .iter()
-                .map(|i| Intersection::new(i.0, i.1, Some(ray)))
+                .map(|i| Intersection::new(i.0, i.1))
                 .collect(),
         )
     }
@@ -71,73 +71,85 @@ impl Shape for Box<dyn Shape> {
 pub struct Intersection<'a> {
     pub t: f64,
     pub shape: &'a dyn Shape,
-    pub point: Tuple,
-    pub eye_vector: Tuple,
-    pub normal_vector: Tuple,
-    pub reflect_vector: Tuple,
-    pub inside: bool,
-    pub over_point: Tuple,
 }
 
+impl<'a> std::fmt::Debug for Intersection<'a> {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+      f.debug_struct("Intersection")
+          .field("t", &self.t)
+          .finish()
+          .unwrap();
+      f.write_fmt(format_args!("object {:?}", std::ptr::addr_of!(*self.shape)))
+  }
+}
+
+#[derive(Debug)]
 pub struct IntersectionList<'a> {
     pub intersections: Vec<Intersection<'a>>,
 }
 
 impl<'a> Intersection<'a> {
-    pub fn new(t: f64, shape: &'a dyn Shape, ray: Option<&Ray>) -> Intersection<'a> {
-        let ray = match ray {
-            Some(r) => *r,
-            None => Ray::new(Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 0.)),
-        };
-
-        let point = ray.position(t);
-        let eye_vector = -ray.direction;
-        let inside = shape.normal_at(point).dot(&eye_vector) < 0.;
-        let normal_vector = if inside {
-            -shape.normal_at(point)
-        } else {
-            shape.normal_at(point)
-        };
-        let over_point = point + normal_vector * EPSILON;
-        let reflect_vector = ray.direction.reflect(&normal_vector);
-
+    pub fn new(t: f64, shape: &'a dyn Shape) -> Intersection<'a> {
         Intersection {
             t,
             shape,
+        }
+    }
+
+    pub fn context(&'a self, ray: &Ray, xs: Option<&IntersectionList>) -> IntersectionContext {
+        let point = ray.position(self.t);
+        let eye_vector = -ray.direction;
+        let inside = self.shape.normal_at(point).dot(&eye_vector) < 0.;
+        let normal_vector = if inside {
+            -self.shape.normal_at(point)
+        } else {
+            self.shape.normal_at(point)
+        };
+        let over_point = point + normal_vector * EPSILON;
+        let under_point = point - normal_vector * EPSILON;
+        let reflect_vector = ray.direction.reflect(&normal_vector);
+
+        let mut n1 = 0.;
+        let mut n2 = 0.;
+
+        if let Some(xs) = xs {
+          if let Some(hit) = xs.hit() {
+
+            let mut containers: Vec<&dyn Shape> = vec![];
+
+            for i in &xs.intersections {
+              if i == hit {
+                if containers.len() == 0 {
+                  n1 = 1.;
+                } else {
+                  n1 = containers.last().unwrap().material().refractive_index;
+                }
+              }
+            }
+
+          }
+        }
+
+        IntersectionContext {
+            t: self.t,
+            shape: self.shape,
             point,
             eye_vector,
             normal_vector,
             reflect_vector,
             inside,
             over_point,
+            under_point,
+            n1,
+            n2: 0.,
         }
-    }
-
-    pub fn shade(&self, world: &World) -> Color {
-        assert_eq!(world.lights.len(), 1);
-        let in_shadow = world.is_shadowed(self.over_point);
-        self.shape.material().lighting(
-            &world.lights[0],
-            self.shape,
-            self.over_point,
-            self.eye_vector,
-            self.normal_vector,
-            in_shadow,
-        )
     }
 }
 
 impl<'a> PartialEq for Intersection<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        self.t == other.t
-            && std::ptr::eq(self.shape, other.shape)
-            && self.point == other.point
-            && self.eye_vector == other.eye_vector
-            && self.normal_vector == other.normal_vector
-            && self.over_point == other.over_point
-            && self.inside == other.inside
-            && self.reflect_vector == other.reflect_vector
-    }
+  fn eq(&self, other: &Self) -> bool {
+    self.t == other.t && std::ptr::eq(self.shape.as_any(), other.shape.as_any())
+  }
 }
 
 impl<'a> PartialOrd for Intersection<'a> {
@@ -172,21 +184,6 @@ impl<'a> IntersectionList<'a> {
     }
 }
 
-impl<'a> std::fmt::Debug for Intersection<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Intersection")
-            .field("t", &self.t)
-            .field("point", &self.point)
-            .field("eye_vector", &self.eye_vector)
-            .field("normal_vector", &self.normal_vector)
-            .field("inside", &self.inside)
-            .field("reflect_vector", &self.reflect_vector)
-            .finish()
-            .unwrap();
-        f.write_fmt(format_args!("object {:?}", std::ptr::addr_of!(*self.shape)))
-    }
-}
-
 impl<'a> Add for IntersectionList<'a> {
     type Output = Self;
 
@@ -205,13 +202,13 @@ impl<'a> Add for IntersectionList<'a> {
 mod tests {
     use super::*;
     use crate::{
-        color::Color, light::PointLight, matrix::Matrix, plane::Plane, sphere::Sphere, world::World,
+        color::Color, light::PointLight, matrix::Matrix, sphere::Sphere, world::World,
     };
 
     #[test]
     pub fn intersection() {
         let s = Sphere::new(None);
-        let i = Intersection::new(3.5, &s, None);
+        let i = Intersection::new(3.5, &s);
         assert_eq!(i.t, 3.5);
         assert!(std::ptr::eq(i.shape, &s));
     }
@@ -219,8 +216,8 @@ mod tests {
     #[test]
     pub fn intersection_list() {
         let s = Sphere::new(None);
-        let i1 = Intersection::new(1., &s, None);
-        let i2 = Intersection::new(2., &s, None);
+        let i1 = Intersection::new(1., &s);
+        let i2 = Intersection::new(2., &s);
         let i = IntersectionList::new(vec![i1, i2]);
         assert_eq!(i.intersections.len(), 2);
         assert_eq!(i.intersections[0].t, 1.);
@@ -232,25 +229,25 @@ mod tests {
     #[test]
     pub fn hit() {
         let s = Sphere::new(None);
-        let i1 = Intersection::new(1., &s, None);
-        let i2 = Intersection::new(2., &s, None);
+        let i1 = Intersection::new(1., &s);
+        let i2 = Intersection::new(2., &s);
         let i = IntersectionList::new(vec![i1, i2]);
         assert_eq!(i.hit(), Some(&i.intersections[0]));
 
-        let i1 = Intersection::new(-1., &s, None);
-        let i2 = Intersection::new(1., &s, None);
+        let i1 = Intersection::new(-1., &s);
+        let i2 = Intersection::new(1., &s);
         let i = IntersectionList::new(vec![i1.clone(), i2.clone()]);
         assert_eq!(i.hit(), Some(&i2));
 
-        let i1 = Intersection::new(-2., &s, None);
-        let i2 = Intersection::new(-1., &s, None);
+        let i1 = Intersection::new(-2., &s);
+        let i2 = Intersection::new(-1., &s);
         let i = IntersectionList::new(vec![i1, i2]);
         assert_eq!(i.hit(), None);
 
-        let i1 = Intersection::new(5., &s, None);
-        let i2 = Intersection::new(7., &s, None);
-        let i3 = Intersection::new(-3., &s, None);
-        let i4 = Intersection::new(2., &s, None);
+        let i1 = Intersection::new(5., &s);
+        let i2 = Intersection::new(7., &s);
+        let i3 = Intersection::new(-3., &s);
+        let i4 = Intersection::new(2., &s);
         let i = IntersectionList::new(vec![i1.clone(), i2.clone(), i3.clone(), i4.clone()]);
         assert_eq!(i.hit(), Some(&i4));
     }
@@ -260,23 +257,25 @@ mod tests {
         let r = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
         let shape = Sphere::new(None);
         let i = r.intersect(&shape).intersections;
-        assert_eq!(i[0].t, 4.);
-        assert!(std::ptr::eq(i[0].shape.as_any(), shape.as_any()));
-        assert_eq!(i[0].point, Tuple::point(0., 0., -1.));
-        assert_eq!(i[0].eye_vector, Tuple::vector(0., 0., -1.));
-        assert_eq!(i[0].normal_vector, Tuple::vector(0., 0., -1.));
-        assert_eq!(i[0].inside, false);
+        let c = i[0].context(&r, None);
+        assert_eq!(c.t, 4.);
+        assert!(std::ptr::eq(c.shape.as_any(), shape.as_any()));
+        assert_eq!(c.point, Tuple::point(0., 0., -1.));
+        assert_eq!(c.eye_vector, Tuple::vector(0., 0., -1.));
+        assert_eq!(c.normal_vector, Tuple::vector(0., 0., -1.));
+        assert_eq!(c.inside, false);
 
         let r = Ray::new(Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 1.));
         let shape = Sphere::new(None);
         let i = r.intersect(&shape);
         let i = i.hit().unwrap();
-        assert_eq!(i.t, 1.);
-        assert!(std::ptr::eq(i.shape.as_any(), shape.as_any()));
-        assert_eq!(i.point, Tuple::point(0., 0., 1.));
-        assert_eq!(i.eye_vector, Tuple::vector(0., 0., -1.));
-        assert_eq!(i.normal_vector, Tuple::vector(0., 0., -1.));
-        assert_eq!(i.inside, true);
+        let c = i.context(&r, None);
+        assert_eq!(c.t, 1.);
+        assert!(std::ptr::eq(c.shape.as_any(), shape.as_any()));
+        assert_eq!(c.point, Tuple::point(0., 0., 1.));
+        assert_eq!(c.eye_vector, Tuple::vector(0., 0., -1.));
+        assert_eq!(c.normal_vector, Tuple::vector(0., 0., -1.));
+        assert_eq!(c.inside, true);
     }
 
     #[test]
@@ -286,7 +285,8 @@ mod tests {
         let shape = &w.objects[0];
         let i = r.intersect(shape);
         let i = i.hit().unwrap();
-        assert_eq!(i.shade(&w), Color::new(0.38066, 0.47583, 0.2855));
+        let c = i.context(&r, None).shade_hit(&w, MAX_REFLECTIONS);
+        assert_eq!(c, Color::new(0.38066, 0.47583, 0.2855));
     }
 
     #[test]
@@ -297,7 +297,10 @@ mod tests {
         let shape = &w.objects[1];
         let i = r.intersect(shape);
         let i = i.hit().unwrap();
-        assert_eq!(i.shade(&w), Color::new(0.90498, 0.90498, 0.90498));
+        let c = i.context(&r, None).shade_hit(&w, MAX_REFLECTIONS);
+        assert_eq!(c,
+            Color::new(0.90498, 0.90498, 0.90498)
+        );
     }
 
     #[test]
@@ -307,8 +310,9 @@ mod tests {
         shape.set_transform(&Matrix::translation(0., 0., 1.));
         let i = r.intersect(&shape);
         let hit = i.hit().unwrap();
-        assert!(hit.over_point.z < -EPSILON / 2.);
-        assert!(hit.point.z > hit.over_point.z);
+        let c = hit.context(&r, None);
+        assert!(c.over_point.z < -EPSILON / 2.);
+        assert!(c.point.z > c.over_point.z);
     }
 
     #[test]
@@ -320,22 +324,5 @@ mod tests {
         let mut m = Material::new();
         m.ambient = 1.;
         assert_eq!(*s.material(), m);
-    }
-
-    #[test]
-    fn reflection() {
-        let m = Material::new();
-        assert_eq!(m.reflective, 0.);
-
-        let shape = Plane::new(None);
-        let r = Ray::new(
-            Tuple::point(0., 1., -1.),
-            Tuple::vector(0., 2_f64.sqrt() / -2., 2_f64.sqrt() / 2.),
-        );
-        let i = r.intersect(&shape);
-        assert_eq!(
-            i.hit().unwrap().reflect_vector,
-            Tuple::vector(0., 2_f64.sqrt() / 2., 2_f64.sqrt() / 2.)
-        );
     }
 }
