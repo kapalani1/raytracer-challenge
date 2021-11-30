@@ -3,7 +3,7 @@ use std::any::Any;
 use crate::material::Material;
 use crate::matrix::Matrix;
 use crate::ray::Ray;
-use crate::shape::{Shape, ShapeIntersection, ShapeIntersectionList};
+use crate::shape::{Intersection, IntersectionList, Shape};
 use crate::tuple::Tuple;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -31,24 +31,19 @@ impl Sphere {
 }
 
 impl Shape for Sphere {
-    fn normal_at(&self, point: Tuple) -> Tuple {
-        assert!(point.is_point());
-        let object_space_point = self.transform.inverse() * point;
-        let object_normal = Tuple::vector(
+    fn local_normal(&self, object_space_point: Tuple) -> Tuple {
+        Tuple::vector(
             object_space_point.x,
             object_space_point.y,
             object_space_point.z,
-        );
-        let mut world_normal = self.transform.inverse().transpose() * object_normal;
-        world_normal.w = 0.;
-        world_normal.normalize()
+        )
     }
 
     fn material_mut(&mut self) -> &mut Material {
         &mut self.material
     }
 
-    fn intersect(&self, ray: &Ray) -> ShapeIntersectionList {
+    fn intersect(&self, ray: &Ray) -> IntersectionList {
         let ray_obj_space = ray.transform(&self.transform.inverse());
         let sphere_to_ray = ray_obj_space.origin - self.center;
         let a = ray_obj_space.direction.dot(&ray_obj_space.direction);
@@ -57,13 +52,13 @@ impl Shape for Sphere {
         let discriminant = b * b - 4. * a * c;
 
         if discriminant < 0. {
-            ShapeIntersectionList::new(vec![])
+            IntersectionList::new(vec![])
         } else {
             let t1 = (-b - discriminant.sqrt()) / (2. * a);
             let t2 = (-b + discriminant.sqrt()) / (2. * a);
-            ShapeIntersectionList::new(vec![
-                ShapeIntersection::new(t1, self, Some(ray)),
-                ShapeIntersection::new(t2, self, Some(ray)),
+            IntersectionList::new(vec![
+                Intersection::new(t1, self, Some(ray)),
+                Intersection::new(t2, self, Some(ray)),
             ])
         }
     }
@@ -77,13 +72,12 @@ impl Shape for Sphere {
     }
 
     fn transform(&self) -> &Matrix {
-      &self.transform
+        &self.transform
     }
 
     fn set_transform(&mut self, m: &Matrix) {
-      self.transform = m.clone();
-  }
-
+        self.transform = m.clone();
+    }
 }
 
 #[cfg(test)]

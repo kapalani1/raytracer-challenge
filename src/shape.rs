@@ -1,27 +1,38 @@
 use std::{any::Any, ops::Add};
 
-use crate::{EPSILON, color::Color, material::Material, matrix::Matrix, ray::Ray, tuple::Tuple, world::World};
+use crate::{
+    color::Color, material::Material, matrix::Matrix, ray::Ray, tuple::Tuple, world::World, EPSILON,
+};
 
 pub trait Shape: Send + Sync {
-    fn normal_at(&self, point: Tuple) -> Tuple;
+    fn local_normal(&self, point: Tuple) -> Tuple;
     fn material_mut(&mut self) -> &mut Material;
-    fn intersect(&self, ray: &Ray) -> ShapeIntersectionList;
+    fn intersect(&self, ray: &Ray) -> IntersectionList;
     fn as_any(&self) -> &dyn Any;
     fn material(&self) -> &Material;
     fn transform(&self) -> &Matrix;
     fn set_transform(&mut self, m: &Matrix);
+
+    fn normal_at(&self, point: Tuple) -> Tuple {
+        assert!(point.is_point());
+        let object_space_point = self.transform().inverse() * point;
+        let object_normal = self.local_normal(object_space_point);
+        let mut world_normal = self.transform().inverse().transpose() * object_normal;
+        world_normal.w = 0.;
+        world_normal.normalize()
+    }
 }
 
 impl Shape for Box<dyn Shape> {
-    fn normal_at(&self, point: Tuple) -> Tuple {
-        self.as_ref().normal_at(point)
+    fn local_normal(&self, point: Tuple) -> Tuple {
+        self.as_ref().local_normal(point)
     }
 
     fn material_mut(&mut self) -> &mut Material {
         self.as_mut().material_mut()
     }
 
-    fn intersect(&self, ray: &Ray) -> ShapeIntersectionList {
+    fn intersect(&self, ray: &Ray) -> IntersectionList {
         self.as_ref().intersect(ray)
     }
 
@@ -43,7 +54,7 @@ impl Shape for Box<dyn Shape> {
 }
 
 #[derive(Clone)]
-pub struct ShapeIntersection<'a> {
+pub struct Intersection<'a> {
     pub t: f64,
     pub shape: &'a dyn Shape,
     pub point: Tuple,
@@ -53,12 +64,12 @@ pub struct ShapeIntersection<'a> {
     pub over_point: Tuple,
 }
 
-pub struct ShapeIntersectionList<'a> {
-    pub intersections: Vec<ShapeIntersection<'a>>,
+pub struct IntersectionList<'a> {
+    pub intersections: Vec<Intersection<'a>>,
 }
 
-impl<'a> ShapeIntersection<'a> {
-    pub fn new(t: f64, shape: &'a dyn Shape, ray: Option<&Ray>) -> ShapeIntersection<'a> {
+impl<'a> Intersection<'a> {
+    pub fn new(t: f64, shape: &'a dyn Shape, ray: Option<&Ray>) -> Intersection<'a> {
         let ray = match ray {
             Some(r) => *r,
             None => Ray::new(Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 0.)),
@@ -74,7 +85,7 @@ impl<'a> ShapeIntersection<'a> {
         };
         let over_point = point + normal_vector * EPSILON;
 
-        ShapeIntersection {
+        Intersection {
             t,
             shape,
             point,
@@ -98,7 +109,7 @@ impl<'a> ShapeIntersection<'a> {
     }
 }
 
-impl<'a> PartialEq for ShapeIntersection<'a> {
+impl<'a> PartialEq for Intersection<'a> {
     fn eq(&self, other: &Self) -> bool {
         self.t == other.t
             && std::ptr::eq(self.shape, other.shape)
@@ -110,22 +121,22 @@ impl<'a> PartialEq for ShapeIntersection<'a> {
     }
 }
 
-impl<'a> PartialOrd for ShapeIntersection<'a> {
+impl<'a> PartialOrd for Intersection<'a> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.t.partial_cmp(&other.t)
     }
 }
 
-impl<'a> Ord for ShapeIntersection<'a> {
+impl<'a> Ord for Intersection<'a> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.partial_cmp(&other).unwrap()
     }
 }
 
-impl<'a> Eq for ShapeIntersection<'a> {}
+impl<'a> Eq for Intersection<'a> {}
 
-impl<'a> ShapeIntersectionList<'a> {
-    pub fn new(intersections: Vec<ShapeIntersection<'a>>) -> Self {
+impl<'a> IntersectionList<'a> {
+    pub fn new(intersections: Vec<Intersection<'a>>) -> Self {
         let mut sorted_intersections = intersections.clone();
         sorted_intersections.sort();
         Self {
@@ -133,7 +144,7 @@ impl<'a> ShapeIntersectionList<'a> {
         }
     }
 
-    pub fn hit(&self) -> Option<&ShapeIntersection> {
+    pub fn hit(&self) -> Option<&Intersection> {
         let filtered: Vec<_> = self.intersections.iter().filter(|x| x.t > 0.).collect();
         match filtered.len() {
             0 => None,
@@ -142,7 +153,7 @@ impl<'a> ShapeIntersectionList<'a> {
     }
 }
 
-impl<'a> std::fmt::Debug for ShapeIntersection<'a> {
+impl<'a> std::fmt::Debug for Intersection<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Intersection")
             .field("t", &self.t)
@@ -156,7 +167,7 @@ impl<'a> std::fmt::Debug for ShapeIntersection<'a> {
     }
 }
 
-impl<'a> Add for ShapeIntersectionList<'a> {
+impl<'a> Add for IntersectionList<'a> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
@@ -164,7 +175,7 @@ impl<'a> Add for ShapeIntersectionList<'a> {
         let mut rhs = rhs;
         sorted_intersections.append(&mut rhs.intersections);
         sorted_intersections.sort();
-        ShapeIntersectionList {
+        IntersectionList {
             intersections: sorted_intersections,
         }
     }
@@ -178,7 +189,7 @@ mod tests {
     #[test]
     pub fn intersection() {
         let s = Sphere::new(None);
-        let i = ShapeIntersection::new(3.5, &s, None);
+        let i = Intersection::new(3.5, &s, None);
         assert_eq!(i.t, 3.5);
         assert!(std::ptr::eq(i.shape, &s));
     }
@@ -186,9 +197,9 @@ mod tests {
     #[test]
     pub fn intersection_list() {
         let s = Sphere::new(None);
-        let i1 = ShapeIntersection::new(1., &s, None);
-        let i2 = ShapeIntersection::new(2., &s, None);
-        let i = ShapeIntersectionList::new(vec![i1, i2]);
+        let i1 = Intersection::new(1., &s, None);
+        let i2 = Intersection::new(2., &s, None);
+        let i = IntersectionList::new(vec![i1, i2]);
         assert_eq!(i.intersections.len(), 2);
         assert_eq!(i.intersections[0].t, 1.);
         assert_eq!(i.intersections[1].t, 2.);
@@ -199,26 +210,26 @@ mod tests {
     #[test]
     pub fn hit() {
         let s = Sphere::new(None);
-        let i1 = ShapeIntersection::new(1., &s, None);
-        let i2 = ShapeIntersection::new(2., &s, None);
-        let i = ShapeIntersectionList::new(vec![i1, i2]);
+        let i1 = Intersection::new(1., &s, None);
+        let i2 = Intersection::new(2., &s, None);
+        let i = IntersectionList::new(vec![i1, i2]);
         assert_eq!(i.hit(), Some(&i.intersections[0]));
 
-        let i1 = ShapeIntersection::new(-1., &s, None);
-        let i2 = ShapeIntersection::new(1., &s, None);
-        let i = ShapeIntersectionList::new(vec![i1.clone(), i2.clone()]);
+        let i1 = Intersection::new(-1., &s, None);
+        let i2 = Intersection::new(1., &s, None);
+        let i = IntersectionList::new(vec![i1.clone(), i2.clone()]);
         assert_eq!(i.hit(), Some(&i2));
 
-        let i1 = ShapeIntersection::new(-2., &s, None);
-        let i2 = ShapeIntersection::new(-1., &s, None);
-        let i = ShapeIntersectionList::new(vec![i1, i2]);
+        let i1 = Intersection::new(-2., &s, None);
+        let i2 = Intersection::new(-1., &s, None);
+        let i = IntersectionList::new(vec![i1, i2]);
         assert_eq!(i.hit(), None);
 
-        let i1 = ShapeIntersection::new(5., &s, None);
-        let i2 = ShapeIntersection::new(7., &s, None);
-        let i3 = ShapeIntersection::new(-3., &s, None);
-        let i4 = ShapeIntersection::new(2., &s, None);
-        let i = ShapeIntersectionList::new(vec![i1.clone(), i2.clone(), i3.clone(), i4.clone()]);
+        let i1 = Intersection::new(5., &s, None);
+        let i2 = Intersection::new(7., &s, None);
+        let i3 = Intersection::new(-3., &s, None);
+        let i4 = Intersection::new(2., &s, None);
+        let i = IntersectionList::new(vec![i1.clone(), i2.clone(), i3.clone(), i4.clone()]);
         assert_eq!(i.hit(), Some(&i4));
     }
 
@@ -280,12 +291,12 @@ mod tests {
 
     #[test]
     fn material_shape() {
-      let s = Sphere::new(None);
-      assert_eq!(*s.material(), Material::new());
-      let mut s = Sphere::new(None);
-      s.material_mut().ambient = 1.;
-      let mut m = Material::new();
-      m.ambient = 1.;
-      assert_eq!(*s.material(), m);
+        let s = Sphere::new(None);
+        assert_eq!(*s.material(), Material::new());
+        let mut s = Sphere::new(None);
+        s.material_mut().ambient = 1.;
+        let mut m = Material::new();
+        m.ambient = 1.;
+        assert_eq!(*s.material(), m);
     }
 }

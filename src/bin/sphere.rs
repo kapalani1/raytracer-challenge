@@ -1,5 +1,8 @@
 use rayon::prelude::*;
-use raytracer::{canvas::Canvas, color::Color, light::PointLight, ray::Ray, shape::Shape, sphere::Sphere, tuple::Tuple};
+use raytracer::{
+    canvas::Canvas, color::Color, light::PointLight, ray::Ray, shape::Shape, sphere::Sphere,
+    tuple::Tuple,
+};
 
 fn main() {
     let mut c = Canvas::new(500, 500);

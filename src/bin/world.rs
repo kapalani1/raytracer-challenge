@@ -1,4 +1,7 @@
-use raytracer::{PI, camera::Camera, color::Color, light::PointLight, material::Material, matrix::Matrix, plane::Plane, shape::Shape, sphere::Sphere, tuple::Tuple, world::World};
+use raytracer::{
+    camera::Camera, color::Color, light::PointLight, material::Material, matrix::Matrix,
+    plane::Plane, shape::Shape, sphere::Sphere, tuple::Tuple, world::World, PI,
+};
 
 fn main() {
     let mut material = Material::new();
