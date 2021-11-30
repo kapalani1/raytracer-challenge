@@ -1,70 +1,71 @@
-use raytracer::{
-  camera::Camera,
-  color::{Color, WHITE},
-  light::PointLight,
-  material::Material,
-  matrix::Matrix,
-  pattern::{CheckerPattern, RadialGradientPattern, RingPattern, StripePattern},
-  plane::Plane,
-  shape::Shape,
-  sphere::Sphere,
-  tuple::Tuple,
-  world::World,
-  PI,
-};
+use raytracer::{PI, camera::Camera, color::{BLACK, Color, WHITE}, light::PointLight, material::Material, matrix::Matrix, pattern::{CheckerPattern, GradientPattern, RingPattern, StripePattern}, plane::Plane, shape::Shape, sphere::Sphere, tuple::Tuple, world::World};
 
 fn main() {
-  let mut material = Material::new();
-  let mut pattern = RingPattern::new(WHITE, Color::new(0.5, 0.5, 1.));
-  pattern.perturb();
-  pattern.set_transform(&Matrix::translation(-2., 0.5, 1.));
-  material.pattern = Some(pattern);
-  let floor = Plane::new(Some(material));
+    let mut material = Material::new();
+    let pattern = CheckerPattern::new(WHITE, Color::new(0.5, 0.5, 0.5));
+    material.pattern = Some(pattern);
+    let floor = Plane::new(Some(material));
 
-  let mut material = Material::new();
-  let pattern = CheckerPattern::new(Color::new(0.1, 0.5, 0.1), WHITE);
-  material.pattern = Some(pattern);
-  let mut wall = Plane::new(Some(material));
-  wall.set_transform(&(&Matrix::translation(0., 0., 10.) * &Matrix::rotation_x(PI / 4.)));
+    let mut material = Material::new();
+    let mut pattern = RingPattern::new(vec![Color::new(0.5, 0.5, 0.5), WHITE, Color::new(0.7, 0.6, 0.7)]);
+    pattern.set_transform(&Matrix::shearing(1., 1., 0., 0., 0., 0.));
+    material.pattern = Some(pattern);
+    let mut wall = Plane::new(Some(material));
+    wall.set_transform(&(&Matrix::translation(0., 0., 5.) * &Matrix::rotation_x(PI / 2.)));
 
-  let mut material = Material::new();
-  let mut pattern = StripePattern::new(WHITE, Color::new(0.1, 0.1, 0.1));
-  pattern.set_transform(&Matrix::scaling(0.1, 0.1, 0.1));
-  pattern.perturb();
-  material.pattern = Some(pattern);
-  let mut middle = Sphere::new(Some(material));
-  middle.set_transform(&(&Matrix::translation(-2., 0.5, 1.) * &Matrix::rotation_z(PI * 1.1)));
+    let mut material = Material::new();
+    let mut pattern = StripePattern::new(vec![Color::new(0.5, 0.5, 0.5), WHITE, Color::new(0.7, 0.6, 0.7)]);
+    pattern.set_transform(&Matrix::scaling(0.35, 0.35, 0.35));
+    material.diffuse = 0.7;
+    material.specular = 0.3;
+    material.pattern = Some(pattern);
+    let mut sphere1 = Sphere::new(Some(material));
+    sphere1.set_transform(&(&Matrix::translation(3., 1.5, -4.) * &Matrix::scaling(1.5, 1.5, 1.5)));
 
-  material = Material::new();
-  let mut pattern = StripePattern::new(Color::new(0.3, 0.8, 0.8), Color::new(0.5, 0.9, 0.9));
-  pattern.set_transform(&(&Matrix::scaling(0.2, 0.2, 0.2) * &Matrix::rotation_z(PI)));
-  pattern.perturb();
-  material.pattern = Some(pattern);
-  let mut right = Sphere::new(Some(material));
-  right.set_transform(
-      &(&Matrix::translation(1., 1., -2.)
-          * &Matrix::scaling(1., 1., 1.)
-          * &Matrix::rotation_y(PI / 6.)),
-  );
+    material = Material::new();
+    let mut pattern = RingPattern::new(vec![WHITE, Color::new(0.7, 0.6, 0.7)]);
+    pattern.set_transform(&Matrix::scaling(0.2, 0.2, 0.2));
+    material.diffuse = 0.7;
+    material.specular = 0.3;
+    material.pattern = Some(pattern);
+    let mut sphere2 = Sphere::new(Some(material));
+    sphere2.set_transform(
+        &(&Matrix::translation(-3., 1.5, -4.)
+            * &Matrix::rotation_x(PI / 2.)
+            * &Matrix::scaling(1.5, 1.5, 1.5)),
+    );
 
-  let light = PointLight::new(Tuple::point(-10., 10., -10.), Color::new(1., 1., 1.));
+    material = Material::new();
+    let mut pattern = GradientPattern::new(Color::new(0.7, 0.6, 0.7), BLACK);
+    pattern.set_transform(&(&Matrix::translation(-1., 0., 0.) * &Matrix::scaling(2., 1., 1.)));
+    material.diffuse = 0.7;
+    material.specular = 0.3;
+    material.pattern = Some(pattern);
+    let mut sphere3 = Sphere::new(Some(material));
+    sphere3.set_transform(
+        &(&Matrix::translation(0., 1., -7.)
+            * &Matrix::scaling(0.33, 0.33, 0.33)),
+    );
 
-  let world = World::new(
-      vec![
-          Box::new(floor),
-          Box::new(wall),
-          Box::new(middle),
-          Box::new(right),
-      ],
-      vec![light],
-  );
-  let mut camera = Camera::new(800, 400, PI / 3.);
-  camera.transform = Matrix::view_transform(
-      Tuple::point(0., 1.5, -5.),
-      Tuple::point(0., 1., 0.),
-      Tuple::vector(0., 1., 0.),
-  );
+    let light = PointLight::new(Tuple::point(-7., 10., -10.), Color::new(1., 1., 1.));
 
-  let canvas = camera.render(&world);
-  canvas.save_ppm("world_pattern.ppm");
+    let world = World::new(
+        vec![
+            Box::new(floor),
+            Box::new(wall),
+            Box::new(sphere1),
+            Box::new(sphere2),
+            Box::new(sphere3),
+        ],
+        vec![light],
+    );
+    let mut camera = Camera::new(800, 400, PI / 1.5);
+    camera.transform = Matrix::view_transform(
+        Tuple::point(-1., 2., -9.),
+        Tuple::point(0., 1., 0.),
+        Tuple::vector(0., 1., 0.),
+    );
+
+    let canvas = camera.render(&world);
+    canvas.save_ppm("world_pattern.ppm");
 }

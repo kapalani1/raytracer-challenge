@@ -1,10 +1,5 @@
-use crate::{
-    color::{Color, BLACK, WHITE},
-    matrix::Matrix,
-    shape::Shape,
-    tuple::Tuple,
-};
-use noise::{NoiseFn, OpenSimplex, Perlin, Seedable, SuperSimplex};
+use crate::{color::Color, matrix::Matrix, shape::Shape, tuple::Tuple};
+use noise::{NoiseFn, Seedable, SuperSimplex};
 use rand::Rng;
 
 #[derive(Debug, Clone)]
@@ -68,20 +63,16 @@ impl Pattern {
 
 #[derive(Debug, Clone)]
 pub struct StripePattern {
-    pub a: Color,
-    pub b: Color,
+    pub colors: Vec<Color>,
 }
 
 impl StripePattern {
-    pub fn new(a: Color, b: Color) -> Pattern {
-        Pattern::new(PatternType::StripePattern(StripePattern { a, b }))
+    pub fn new(colors: Vec<Color>) -> Pattern {
+        Pattern::new(PatternType::StripePattern(StripePattern { colors }))
     }
 
     pub fn color_at(&self, point: Tuple) -> Color {
-        match point.x.floor() as i64 % 2 {
-            0 => self.a,
-            _ => self.b,
-        }
+        self.colors[point.x.floor().abs() as usize % self.colors.len()]
     }
 }
 
@@ -103,20 +94,17 @@ impl GradientPattern {
 
 #[derive(Debug, Clone)]
 pub struct RingPattern {
-    pub a: Color,
-    pub b: Color,
+    pub colors: Vec<Color>,
 }
 
 impl RingPattern {
-    pub fn new(a: Color, b: Color) -> Pattern {
-        Pattern::new(PatternType::RingPattern(RingPattern { a, b }))
+    pub fn new(colors: Vec<Color>) -> Pattern {
+        Pattern::new(PatternType::RingPattern(RingPattern { colors }))
     }
 
     pub fn color_at(&self, point: Tuple) -> Color {
-        match (point.x * point.x + point.z * point.z).sqrt().floor() as usize % 2 {
-            0 => self.a,
-            _ => self.b,
-        }
+        self.colors
+            [(point.x * point.x + point.z * point.z).sqrt().floor() as usize % self.colors.len()]
     }
 }
 
@@ -161,6 +149,7 @@ impl RadialGradientPattern {
 
 #[cfg(test)]
 mod tests {
+    use crate::color::{BLACK, WHITE};
     use crate::sphere::Sphere;
 
     use super::StripePattern;
@@ -168,10 +157,10 @@ mod tests {
 
     #[test]
     fn stripe() {
-        let pattern = StripePattern::new(WHITE, BLACK);
+        let pattern = StripePattern::new(vec![WHITE, BLACK]);
         assert_eq!(pattern.transform, Matrix::identity(4));
 
-        let mut p = StripePattern::new(WHITE, BLACK);
+        let mut p = StripePattern::new(vec![WHITE, BLACK]);
         p.set_transform(&Matrix::translation(1., 2., 3.));
         assert_eq!(p.transform, Matrix::translation(1., 2., 3.));
 
@@ -195,18 +184,18 @@ mod tests {
     fn stripe_at() {
         let mut object = Sphere::new(None);
         object.set_transform(&Matrix::scaling(2., 2., 2.));
-        let pattern = StripePattern::new(WHITE, BLACK);
+        let pattern = StripePattern::new(vec![WHITE, BLACK]);
         let c = pattern.pattern_at_shape(&object, Tuple::point(1.5, 0., 0.));
         assert_eq!(c, WHITE);
 
-        let mut pattern = StripePattern::new(WHITE, BLACK);
+        let mut pattern = StripePattern::new(vec![WHITE, BLACK]);
         pattern.set_transform(&Matrix::scaling(2., 2., 2.));
         let c = pattern.pattern_at_shape(&object, Tuple::point(1.5, 0., 0.));
         assert_eq!(c, WHITE);
 
         let mut object = Sphere::new(None);
         object.set_transform(&Matrix::scaling(2., 2., 2.));
-        let mut pattern = StripePattern::new(WHITE, BLACK);
+        let mut pattern = StripePattern::new(vec![WHITE, BLACK]);
         pattern.set_transform(&Matrix::scaling(0.5, 0.5, 0.5));
         let c = pattern.pattern_at_shape(&object, Tuple::point(2.5, 0., 0.));
         assert_eq!(c, WHITE);
@@ -232,7 +221,7 @@ mod tests {
 
     #[test]
     fn ring_pattern() {
-        let pattern = RingPattern::new(WHITE, BLACK);
+        let pattern = RingPattern::new(vec![WHITE, BLACK]);
         assert_eq!(pattern.pattern_at(Tuple::point(0., 0., 0.)), WHITE);
         assert_eq!(pattern.pattern_at(Tuple::point(1., 0., 0.)), BLACK);
         assert_eq!(pattern.pattern_at(Tuple::point(0., 0., 1.)), BLACK);

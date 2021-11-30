@@ -178,7 +178,7 @@ mod tests {
     #[test]
     fn test_pattern() {
         let mut m = Material::new();
-        m.pattern = Some(StripePattern::new(WHITE, BLACK));
+        m.pattern = Some(StripePattern::new(vec![WHITE, BLACK]));
         m.ambient = 1.;
         m.diffuse = 0.;
         m.specular = 0.;
