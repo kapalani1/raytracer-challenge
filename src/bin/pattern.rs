@@ -58,7 +58,7 @@ fn main() {
       ],
       vec![light],
   );
-  let mut camera = Camera::new(400, 400, PI / 3.);
+  let mut camera = Camera::new(800, 400, PI / 3.);
   camera.transform = Matrix::view_transform(
       Tuple::point(0., 1.5, -5.),
       Tuple::point(0., 1., 0.),
