@@ -1,4 +1,17 @@
-use raytracer::{PI, camera::Camera, color::{BLACK, Color, WHITE}, light::PointLight, material::Material, matrix::Matrix, pattern::{CheckerPattern, GradientPattern, RingPattern, StripePattern}, plane::Plane, shape::Shape, sphere::Sphere, tuple::Tuple, world::World};
+use raytracer::{
+    camera::Camera,
+    color::{Color, BLACK, WHITE},
+    light::PointLight,
+    material::Material,
+    matrix::Matrix,
+    pattern::{CheckerPattern, GradientPattern, RingPattern, StripePattern},
+    plane::Plane,
+    shape::Shape,
+    sphere::Sphere,
+    tuple::Tuple,
+    world::World,
+    PI,
+};
 
 fn main() {
     let mut material = Material::new();
@@ -7,14 +20,22 @@ fn main() {
     let floor = Plane::new(Some(material));
 
     let mut material = Material::new();
-    let mut pattern = RingPattern::new(vec![Color::new(0.5, 0.5, 0.5), WHITE, Color::new(0.7, 0.6, 0.7)]);
+    let mut pattern = RingPattern::new(vec![
+        Color::new(0.5, 0.5, 0.5),
+        WHITE,
+        Color::new(0.7, 0.6, 0.7),
+    ]);
     pattern.set_transform(&Matrix::shearing(1., 1., 0., 0., 0., 0.));
     material.pattern = Some(pattern);
     let mut wall = Plane::new(Some(material));
     wall.set_transform(&(&Matrix::translation(0., 0., 5.) * &Matrix::rotation_x(PI / 2.)));
 
     let mut material = Material::new();
-    let mut pattern = StripePattern::new(vec![Color::new(0.5, 0.5, 0.5), WHITE, Color::new(0.7, 0.6, 0.7)]);
+    let mut pattern = StripePattern::new(vec![
+        Color::new(0.5, 0.5, 0.5),
+        WHITE,
+        Color::new(0.7, 0.6, 0.7),
+    ]);
     pattern.set_transform(&Matrix::scaling(0.35, 0.35, 0.35));
     material.diffuse = 0.7;
     material.specular = 0.3;
@@ -42,10 +63,8 @@ fn main() {
     material.specular = 0.3;
     material.pattern = Some(pattern);
     let mut sphere3 = Sphere::new(Some(material));
-    sphere3.set_transform(
-        &(&Matrix::translation(0., 1., -7.)
-            * &Matrix::scaling(0.33, 0.33, 0.33)),
-    );
+    sphere3
+        .set_transform(&(&Matrix::translation(0., 1., -7.) * &Matrix::scaling(0.33, 0.33, 0.33)));
 
     let light = PointLight::new(Tuple::point(-7., 10., -10.), Color::new(1., 1., 1.));
 

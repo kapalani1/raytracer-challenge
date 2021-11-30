@@ -74,6 +74,7 @@ pub struct Intersection<'a> {
     pub point: Tuple,
     pub eye_vector: Tuple,
     pub normal_vector: Tuple,
+    pub reflect_vector: Tuple,
     pub inside: bool,
     pub over_point: Tuple,
 }
@@ -98,6 +99,7 @@ impl<'a> Intersection<'a> {
             shape.normal_at(point)
         };
         let over_point = point + normal_vector * EPSILON;
+        let reflect_vector = ray.direction.reflect(&normal_vector);
 
         Intersection {
             t,
@@ -105,6 +107,7 @@ impl<'a> Intersection<'a> {
             point,
             eye_vector,
             normal_vector,
+            reflect_vector,
             inside,
             over_point,
         }
@@ -133,6 +136,7 @@ impl<'a> PartialEq for Intersection<'a> {
             && self.normal_vector == other.normal_vector
             && self.over_point == other.over_point
             && self.inside == other.inside
+            && self.reflect_vector == other.reflect_vector
     }
 }
 
@@ -176,6 +180,7 @@ impl<'a> std::fmt::Debug for Intersection<'a> {
             .field("eye_vector", &self.eye_vector)
             .field("normal_vector", &self.normal_vector)
             .field("inside", &self.inside)
+            .field("reflect_vector", &self.reflect_vector)
             .finish()
             .unwrap();
         f.write_fmt(format_args!("object {:?}", std::ptr::addr_of!(*self.shape)))
@@ -199,7 +204,9 @@ impl<'a> Add for IntersectionList<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{color::Color, light::PointLight, matrix::Matrix, sphere::Sphere, world::World};
+    use crate::{
+        color::Color, light::PointLight, matrix::Matrix, plane::Plane, sphere::Sphere, world::World,
+    };
 
     #[test]
     pub fn intersection() {
@@ -313,5 +320,22 @@ mod tests {
         let mut m = Material::new();
         m.ambient = 1.;
         assert_eq!(*s.material(), m);
+    }
+
+    #[test]
+    fn reflection() {
+        let m = Material::new();
+        assert_eq!(m.reflective, 0.);
+
+        let shape = Plane::new(None);
+        let r = Ray::new(
+            Tuple::point(0., 1., -1.),
+            Tuple::vector(0., 2_f64.sqrt() / -2., 2_f64.sqrt() / 2.),
+        );
+        let i = r.intersect(&shape);
+        assert_eq!(
+            i.hit().unwrap().reflect_vector,
+            Tuple::vector(0., 2_f64.sqrt() / 2., 2_f64.sqrt() / 2.)
+        );
     }
 }
