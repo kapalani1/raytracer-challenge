@@ -1,8 +1,23 @@
 use std::{any::Any, ops::Add};
 
-use crate::{EPSILON, intersection::IntersectionContext, material::Material, matrix::Matrix, ray::Ray, tuple::Tuple};
+use crate::{
+    intersection::IntersectionContext, material::Material, matrix::Matrix, ray::Ray,
+    sphere::Sphere, tuple::Tuple, EPSILON,
+};
 
 pub const MAX_REFLECTIONS: u8 = 4;
+
+#[derive(Debug, Clone)]
+pub enum ShapeType {
+    Sphere(Sphere),
+}
+
+#[derive(Debug, Clone)]
+pub struct Object {
+    pub transform: Matrix,
+    pub shape: ShapeType,
+    pub material: Material,
+}
 
 pub trait Shape: Send + Sync {
     fn local_normal(&self, point: Tuple) -> Tuple;
@@ -74,13 +89,13 @@ pub struct Intersection<'a> {
 }
 
 impl<'a> std::fmt::Debug for Intersection<'a> {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-      f.debug_struct("Intersection")
-          .field("t", &self.t)
-          .finish()
-          .unwrap();
-      f.write_fmt(format_args!("object {:?}", std::ptr::addr_of!(*self.shape)))
-  }
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Intersection")
+            .field("t", &self.t)
+            .finish()
+            .unwrap();
+        f.write_fmt(format_args!("object {:?}", std::ptr::addr_of!(*self.shape)))
+    }
 }
 
 #[derive(Debug)]
@@ -90,10 +105,7 @@ pub struct IntersectionList<'a> {
 
 impl<'a> Intersection<'a> {
     pub fn new(t: f64, shape: &'a dyn Shape) -> Intersection<'a> {
-        Intersection {
-            t,
-            shape,
-        }
+        Intersection { t, shape }
     }
 
     pub fn context(&'a self, ray: &Ray, xs: Option<&IntersectionList>) -> IntersectionContext {
@@ -113,21 +125,24 @@ impl<'a> Intersection<'a> {
         let mut n2 = 0.;
 
         if let Some(xs) = xs {
-          if let Some(hit) = xs.hit() {
+            if let Some(hit) = xs.hit() {
+                let mut containers: Vec<&dyn Any> = vec![];
 
-            let mut containers: Vec<&dyn Shape> = vec![];
-
-            for i in &xs.intersections {
-              if i == hit {
-                if containers.len() == 0 {
-                  n1 = 1.;
-                } else {
-                  n1 = containers.last().unwrap().material().refractive_index;
+                for i in &xs.intersections {
+                    if i == hit {
+                        if containers.len() == 0 {
+                            n1 = 1.;
+                        } else {
+                            let last_shape = containers
+                                .last()
+                                .unwrap()
+                                .downcast_ref::<&dyn Shape>()
+                                .unwrap();
+                            n1 = last_shape.material().refractive_index;
+                        }
+                    }
                 }
-              }
             }
-
-          }
         }
 
         IntersectionContext {
@@ -147,9 +162,9 @@ impl<'a> Intersection<'a> {
 }
 
 impl<'a> PartialEq for Intersection<'a> {
-  fn eq(&self, other: &Self) -> bool {
-    self.t == other.t && std::ptr::eq(self.shape.as_any(), other.shape.as_any())
-  }
+    fn eq(&self, other: &Self) -> bool {
+        self.t == other.t && std::ptr::eq(self.shape.as_any(), other.shape.as_any())
+    }
 }
 
 impl<'a> PartialOrd for Intersection<'a> {
@@ -201,9 +216,7 @@ impl<'a> Add for IntersectionList<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        color::Color, light::PointLight, matrix::Matrix, sphere::Sphere, world::World,
-    };
+    use crate::{color::Color, light::PointLight, matrix::Matrix, sphere::Sphere, world::World};
 
     #[test]
     pub fn intersection() {
@@ -298,9 +311,7 @@ mod tests {
         let i = r.intersect(shape);
         let i = i.hit().unwrap();
         let c = i.context(&r, None).shade_hit(&w, MAX_REFLECTIONS);
-        assert_eq!(c,
-            Color::new(0.90498, 0.90498, 0.90498)
-        );
+        assert_eq!(c, Color::new(0.90498, 0.90498, 0.90498));
     }
 
     #[test]

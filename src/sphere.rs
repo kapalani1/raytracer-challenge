@@ -3,7 +3,7 @@ use std::any::Any;
 use crate::material::Material;
 use crate::matrix::Matrix;
 use crate::ray::Ray;
-use crate::shape::{Shape};
+use crate::shape::{Object, Shape, ShapeType};
 use crate::tuple::Tuple;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -34,6 +34,14 @@ impl Sphere {
         material.transparency = 1.;
         material.refractive_index = 1.5;
         Sphere::new(Some(material))
+    }
+
+    pub fn object_new() -> Object {
+        Object {
+            transform: Matrix::identity(4),
+            shape: ShapeType::Sphere(Sphere::new(None)),
+            material: Material::new(),
+        }
     }
 }
 
