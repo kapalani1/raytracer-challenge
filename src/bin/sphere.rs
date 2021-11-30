@@ -30,7 +30,7 @@ fn main() {
                 *color = hit
                     .shape
                     .material()
-                    .lighting(&light, point, eye, normal, false);
+                    .lighting(&light, hit.shape, point, eye, normal, false);
             }
         });
 

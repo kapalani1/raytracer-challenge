@@ -43,26 +43,6 @@ impl Shape for Sphere {
         &mut self.material
     }
 
-    fn intersect(&self, ray: &Ray) -> IntersectionList {
-        let ray_obj_space = ray.transform(&self.transform.inverse());
-        let sphere_to_ray = ray_obj_space.origin - self.center;
-        let a = ray_obj_space.direction.dot(&ray_obj_space.direction);
-        let b = 2. * ray_obj_space.direction.dot(&sphere_to_ray);
-        let c = sphere_to_ray.dot(&sphere_to_ray) - 1.;
-        let discriminant = b * b - 4. * a * c;
-
-        if discriminant < 0. {
-            IntersectionList::new(vec![])
-        } else {
-            let t1 = (-b - discriminant.sqrt()) / (2. * a);
-            let t2 = (-b + discriminant.sqrt()) / (2. * a);
-            IntersectionList::new(vec![
-                Intersection::new(t1, self, Some(ray)),
-                Intersection::new(t2, self, Some(ray)),
-            ])
-        }
-    }
-
     fn local_intersect(&self, ray_obj_space: &Ray) -> Vec<(f64, &dyn Shape)> {
         let sphere_to_ray = ray_obj_space.origin - self.center;
         let a = ray_obj_space.direction.dot(&ray_obj_space.direction);

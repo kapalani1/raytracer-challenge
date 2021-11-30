@@ -36,16 +36,6 @@ impl Shape for Plane {
         &mut self.material
     }
 
-    fn intersect(&self, ray: &Ray) -> IntersectionList {
-        let ray_obj_space = ray.transform(&self.transform.inverse());
-        if ray_obj_space.direction.y.abs() < EPSILON {
-            IntersectionList::new(vec![])
-        } else {
-            let t = -ray_obj_space.origin.y / ray_obj_space.direction.y;
-            IntersectionList::new(vec![Intersection::new(t, self, Some(ray))])
-        }
-    }
-
     fn local_intersect(&self, ray_obj_space: &Ray) -> Vec<(f64, &dyn Shape)> {
         if ray_obj_space.direction.y.abs() < EPSILON {
             vec![]

@@ -23,7 +23,7 @@ pub trait Shape: Send + Sync {
     }
 
     fn intersect(&self, ray: &Ray) -> IntersectionList {
-        let ray_obj_space = ray.transform(&self.transform().inverse());
+        let ray_obj_space = ray.transform(&(self.transform().inverse()));
         IntersectionList::new(
             self.local_intersect(&ray_obj_space)
                 .iter()
@@ -115,6 +115,7 @@ impl<'a> Intersection<'a> {
         let in_shadow = world.is_shadowed(self.over_point);
         self.shape.material().lighting(
             &world.lights[0],
+            self.shape,
             self.over_point,
             self.eye_vector,
             self.normal_vector,

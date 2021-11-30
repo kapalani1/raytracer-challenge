@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 float-cmp = "0.9.0"
 rayon = "1.5"
+noise = "0.7.0"
+rand = "0.8.4"
