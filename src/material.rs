@@ -1,5 +1,5 @@
-use float_cmp::approx_eq;
 use crate::{color::Color, light::PointLight, tuple::Tuple, EPSILON};
+use float_cmp::approx_eq;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Material {

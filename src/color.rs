@@ -1,6 +1,6 @@
+use crate::EPSILON;
 use float_cmp::approx_eq;
 use std::ops::{Add, Mul, Sub};
-use crate::EPSILON;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Color {

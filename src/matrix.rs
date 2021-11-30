@@ -1,5 +1,5 @@
-use std::ops::{Index, Mul};
 use crate::EPSILON;
+use std::ops::{Index, Mul};
 
 use float_cmp::approx_eq;
 

@@ -66,8 +66,8 @@ impl Camera {
 
 #[cfg(test)]
 mod tests {
+    use crate::{color::Color, EPSILON, PI};
     use float_cmp::approx_eq;
-    use crate::{PI, EPSILON, color::Color};
 
     use super::*;
     #[test]
@@ -104,8 +104,7 @@ mod tests {
             )
         );
 
-        c.transform =
-            Matrix::rotation_y(PI / 4.) * &Matrix::translation(0., -2., 5.);
+        c.transform = Matrix::rotation_y(PI / 4.) * &Matrix::translation(0., -2., 5.);
         let r = c.project_ray(100, 50);
         assert_eq!(
             r,

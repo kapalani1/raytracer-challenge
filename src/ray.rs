@@ -1,8 +1,9 @@
 use crate::color::Color;
-use crate::intersection::{Intersect, IntersectionList};
 use crate::matrix::Matrix;
+use crate::shape::{Shape, ShapeIntersectionList};
 use crate::tuple::Tuple;
 use crate::world::World;
+use rayon::prelude::*;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Ray {
@@ -21,17 +22,16 @@ impl Ray {
         self.origin + self.direction * time
     }
 
-    pub fn intersect<'a>(&self, object: &'a impl Intersect) -> IntersectionList<'a> {
+    pub fn intersect<'a>(&self, object: &'a impl Shape) -> ShapeIntersectionList<'a> {
         object.intersect(&self)
     }
 
-    pub fn project_into_world<'a>(&self, world: &'a World) -> IntersectionList<'a> {
+    pub fn project_into_world<'a>(&self, world: &'a World) -> ShapeIntersectionList<'a> {
         world
             .objects
-            .iter()
+            .par_iter()
             .map(|object| self.intersect(object))
-            .reduce(|i1, i2| i1 + i2)
-            .unwrap()
+            .reduce(|| ShapeIntersectionList::new(vec![]), |i1, i2| i1 + i2)
     }
 
     pub fn color_at(&self, world: &World) -> Color {
@@ -79,12 +79,12 @@ mod tests {
         assert_eq!(i.intersections[0].t, 4.);
         assert_eq!(i.intersections[1].t, 6.);
         assert!(std::ptr::eq(
-            *i.intersections[0].object.as_ref(),
-            s.as_ref()
+            i.intersections[0].shape.as_any(),
+            s.as_any()
         ));
         assert!(std::ptr::eq(
-            *i.intersections[1].object.as_ref(),
-            s.as_ref()
+            i.intersections[1].shape.as_any(),
+            s.as_any()
         ));
 
         let r = Ray::new(Tuple::point(0., 1., -5.), Tuple::vector(0., 0., 1.));
@@ -94,12 +94,12 @@ mod tests {
         assert_eq!(i.intersections[0].t, 5.);
         assert_eq!(i.intersections[1].t, 5.);
         assert!(std::ptr::eq(
-            *i.intersections[0].object.as_ref(),
-            s.as_ref()
+            i.intersections[0].shape.as_any(),
+            s.as_any()
         ));
         assert!(std::ptr::eq(
-            *i.intersections[1].object.as_ref(),
-            s.as_ref()
+            i.intersections[1].shape.as_any(),
+            s.as_any()
         ));
 
         let r = Ray::new(Tuple::point(0., 2., -5.), Tuple::vector(0., 0., 1.));
@@ -114,12 +114,12 @@ mod tests {
         assert_eq!(i.intersections[0].t, -1.);
         assert_eq!(i.intersections[1].t, 1.);
         assert!(std::ptr::eq(
-            *i.intersections[0].object.as_ref(),
-            s.as_ref()
+            i.intersections[0].shape.as_any(),
+            s.as_any()
         ));
         assert!(std::ptr::eq(
-            *i.intersections[1].object.as_ref(),
-            s.as_ref()
+            i.intersections[1].shape.as_any(),
+            s.as_any()
         ));
 
         let r = Ray::new(Tuple::point(0., 0., 5.), Tuple::vector(0., 0., 1.));
@@ -129,12 +129,12 @@ mod tests {
         assert_eq!(i.intersections[0].t, -6.);
         assert_eq!(i.intersections[1].t, -4.);
         assert!(std::ptr::eq(
-            *i.intersections[0].object.as_ref(),
-            s.as_ref()
+            i.intersections[0].shape.as_any(),
+            s.as_any()
         ));
         assert!(std::ptr::eq(
-            *i.intersections[1].object.as_ref(),
-            s.as_ref()
+            i.intersections[1].shape.as_any(),
+            s.as_any()
         ));
     }
 
@@ -179,7 +179,7 @@ mod tests {
         let mut s2 = Sphere::new(Some(mat2));
         s2.set_transform(&Matrix::scaling(0.5, 0.5, 0.5));
 
-        let w = World::new(vec![s1, s2], vec![light]);
+        let w = World::new(vec![Box::new(s1), Box::new(s2)], vec![light]);
         let r = Ray::new(Tuple::point(0., 0., 0.75), Tuple::vector(0., 0., -1.));
         let c = r.color_at(&w);
         assert_eq!(c, w.objects[1].material().color);

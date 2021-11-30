@@ -1,30 +1,10 @@
-use raytracer::{
-    camera::Camera, color::Color, light::PointLight, material::Material, matrix::Matrix,
-    sphere::Sphere, tuple::Tuple, world::World, PI
-};
+use raytracer::{PI, camera::Camera, color::Color, light::PointLight, material::Material, matrix::Matrix, plane::Plane, shape::Shape, sphere::Sphere, tuple::Tuple, world::World};
 
 fn main() {
     let mut material = Material::new();
     material.color = Color::new(1., 0.9, 0.9);
     material.specular = 0.;
-    let mut floor = Sphere::new(Some(material));
-    floor.set_transform(&Matrix::scaling(10., 0.01, 10.));
-
-    let mut left_wall = Sphere::new(Some(material));
-    left_wall.set_transform(
-        &(&Matrix::translation(0., 0., 5.)
-            * &Matrix::rotation_y(-PI / 4.)
-            * &Matrix::rotation_x(PI / 2.)
-            * &Matrix::scaling(10., 0.01, 10.)),
-    );
-
-    let mut right_wall = Sphere::new(Some(material));
-    right_wall.set_transform(
-        &(&Matrix::translation(0., 0., 5.)
-            * &Matrix::rotation_y(PI / 4.)
-            * &Matrix::rotation_x(PI / 2.)
-            * &Matrix::scaling(10., 0.01, 10.)),
-    );
+    let floor = Plane::new(Some(material));
 
     material = Material::new();
     material.color = Color::new(0.1, 1., 0.5);
@@ -52,7 +32,12 @@ fn main() {
     let light = PointLight::new(Tuple::point(-10., 10., -10.), Color::new(1., 1., 1.));
 
     let world = World::new(
-        vec![floor, left_wall, right_wall, middle, right, left],
+        vec![
+            Box::new(floor),
+            Box::new(middle),
+            Box::new(right),
+            Box::new(left),
+        ],
         vec![light],
     );
     let mut camera = Camera::new(800, 400, PI / 3.);
@@ -63,5 +48,5 @@ fn main() {
     );
 
     let canvas = camera.render(&world);
-    canvas.save_ppm("world_shadow.ppm");
+    canvas.save_ppm("world_plane.ppm");
 }

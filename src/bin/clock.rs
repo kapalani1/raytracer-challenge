@@ -11,12 +11,7 @@ fn main() {
     let points: Vec<_> = points
         .iter()
         .enumerate()
-        .map(|(i, x)| {
-            &translation
-                * &scaling
-                * &Matrix::rotation_z(PI * 2. * i as f64 / 12.)
-                * *x
-        })
+        .map(|(i, x)| &translation * &scaling * &Matrix::rotation_z(PI * 2. * i as f64 / 12.) * *x)
         .collect();
 
     for point in points {

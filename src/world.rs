@@ -1,13 +1,15 @@
-use crate::{color::Color, light::PointLight, material::Material, matrix::Matrix, ray::Ray, sphere::Sphere, tuple::Tuple};
+use crate::{
+    color::Color, light::PointLight, material::Material, matrix::Matrix, ray::Ray, shape::Shape,
+    sphere::Sphere, tuple::Tuple,
+};
 
-#[derive(Debug, Clone)]
 pub struct World {
-    pub objects: Vec<Sphere>,
+    pub objects: Vec<Box<dyn Shape>>,
     pub lights: Vec<PointLight>,
 }
 
 impl World {
-    pub fn new(objects: Vec<Sphere>, lights: Vec<PointLight>) -> Self {
+    pub fn new(objects: Vec<Box<dyn Shape>>, lights: Vec<PointLight>) -> Self {
         World { objects, lights }
     }
 
@@ -22,29 +24,35 @@ impl World {
         let mut s2 = Sphere::new(None);
         s2.set_transform(&Matrix::scaling(0.5, 0.5, 0.5));
 
-        World::new(vec![s1, s2], vec![light])
+        World::new(vec![Box::new(s1), Box::new(s2)], vec![light])
     }
 
     pub fn is_shadowed(&self, point: Tuple) -> bool {
-      assert!(point.is_point());
-      assert_eq!(self.lights.len(), 1);
-      let v = self.lights[0].position - point;
-      let distance = v.magnitude();
-      let direction = v.normalize();
+        assert!(point.is_point());
+        assert_eq!(self.lights.len(), 1);
+        let v = self.lights[0].position - point;
+        let distance = v.magnitude();
+        let direction = v.normalize();
 
-      let r = Ray::new(point, direction);
-      let i = r.project_into_world(&self);
-      let hit = i.hit();
-      match hit {
-        Some(h) => if h.t < distance { true } else { false }
-        None => false
-      }
+        let r = Ray::new(point, direction);
+        let i = r.project_into_world(&self);
+        let hit = i.hit();
+        match hit {
+            Some(h) => {
+                if h.t < distance {
+                    true
+                } else {
+                    false
+                }
+            }
+            None => false,
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{ray::Ray};
+    use crate::ray::Ray;
 
     use super::*;
     #[test]
@@ -54,7 +62,6 @@ mod tests {
             w.lights[0],
             PointLight::new(Tuple::point(-10., 10., -10.), Color::new(1., 1., 1.))
         );
-        println!("{:?}", w.lights[0]);
         let mut mat1 = Material::new();
         mat1.color = Color::new(0.8, 1., 0.6);
         mat1.diffuse = 0.7;
@@ -62,8 +69,22 @@ mod tests {
         let s1 = Sphere::new(Some(mat1));
         let mut s2 = Sphere::new(None);
         s2.set_transform(&Matrix::scaling(0.5, 0.5, 0.5));
-        assert!(w.objects.contains(&s1));
-        assert!(w.objects.contains(&s2));
+        assert_eq!(
+            *w.objects[0]
+                .as_ref()
+                .as_any()
+                .downcast_ref::<Sphere>()
+                .unwrap(),
+            s1
+        );
+        assert_eq!(
+            *w.objects[1]
+                .as_ref()
+                .as_any()
+                .downcast_ref::<Sphere>()
+                .unwrap(),
+            s2
+        );
     }
 
     #[test]
@@ -80,14 +101,14 @@ mod tests {
 
     #[test]
     fn shadows() {
-      let w = World::default();
-      let p = Tuple::point(0., 10., 0.);
-      assert!(!w.is_shadowed(p));
-      let p = Tuple::point(10., -10., 10.);
-      assert!(w.is_shadowed(p));
-      let p = Tuple::point(-20., -20., -20.);
-      assert!(!w.is_shadowed(p));
-      let p = Tuple::point(-2., 2., 2.);
-      assert!(!w.is_shadowed(p));
+        let w = World::default();
+        let p = Tuple::point(0., 10., 0.);
+        assert!(!w.is_shadowed(p));
+        let p = Tuple::point(10., -10., 10.);
+        assert!(w.is_shadowed(p));
+        let p = Tuple::point(-20., -20., -20.);
+        assert!(!w.is_shadowed(p));
+        let p = Tuple::point(-2., 2., 2.);
+        assert!(!w.is_shadowed(p));
     }
 }
