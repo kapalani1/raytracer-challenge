@@ -71,7 +71,7 @@ impl Canvas {
     }
 
     pub fn save_ppm(&self, path: &str) {
-        std::fs::write(path, self.to_ppm()).unwrap();
+        std::fs::write(String::from("images/") + path, self.to_ppm()).unwrap();
     }
 }
 
