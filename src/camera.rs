@@ -1,6 +1,13 @@
 use crate::{
-    canvas::Canvas, matrix::Matrix, ray::Ray, shape::MAX_REFLECTIONS, tuple::Tuple, world::World,
+    canvas::Canvas,
+    color::{BLACK},
+    matrix::Matrix,
+    ray::Ray,
+    shape::MAX_REFLECTIONS,
+    tuple::Tuple,
+    world::World,
 };
+use rand::{Rng};
 use rayon::prelude::*;
 
 pub struct Camera {
@@ -36,6 +43,29 @@ impl Camera {
         }
     }
 
+    pub fn project_subsample_rays(&self, x: usize, y: usize) -> Vec<Ray> {
+        let mut subsamples = vec![];
+        for _ in 0..10 {
+            subsamples.push((
+                (x as f64 + rand::thread_rng().gen_range(0_f64..1.)) * self.pixel_size,
+                (y as f64 + rand::thread_rng().gen_range(0_f64..1.)) * self.pixel_size,
+            ));
+        }
+        subsamples
+            .into_iter()
+            .map(|(x, y)| {
+                let world_x = self.half_width - x;
+                let world_y = self.half_height - y;
+
+                let pixel = self.transform.inverse() * Tuple::point(world_x, world_y, -1.);
+                let origin = self.transform.inverse() * Tuple::point(0., 0., 0.);
+                let direction = (pixel - origin).normalize();
+
+                Ray::new(origin, direction)
+            })
+            .collect()
+    }
+
     pub fn project_ray(&self, x: usize, y: usize) -> Ray {
         let x_offset = (x as f64 + 0.5) * self.pixel_size;
         let y_offset = (y as f64 + 0.5) * self.pixel_size;
@@ -60,6 +90,26 @@ impl Camera {
                 let col = index % canvas.width;
                 let ray = self.project_ray(col, row);
                 *color = ray.color_at(&world, MAX_REFLECTIONS);
+            });
+
+        canvas
+    }
+
+    pub fn render_supersample(&self, world: &World) -> Canvas {
+        let mut canvas = Canvas::new(self.hsize, self.vsize);
+        canvas
+            .pixels
+            .par_iter_mut()
+            .enumerate()
+            .for_each(|(index, color)| {
+                let row = index / canvas.width;
+                let col = index % canvas.width;
+                let ray = self.project_subsample_rays(col, row);
+                *color = ray
+                    .iter()
+                    .map(|ray| ray.color_at(&world, MAX_REFLECTIONS))
+                    .fold(BLACK, |a, b| a + b)
+                    * (1.0 / ray.len() as f64);
             });
 
         canvas

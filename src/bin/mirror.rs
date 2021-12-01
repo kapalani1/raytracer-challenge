@@ -49,6 +49,6 @@ fn main() {
         Tuple::vector(0., 1., 0.),
     );
 
-    let canvas = camera.render(&world);
+    let canvas = camera.render_supersample(&world);
     canvas.save_ppm("mirror_spheres.ppm");
 }
