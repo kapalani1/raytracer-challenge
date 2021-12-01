@@ -172,9 +172,9 @@ impl<'a> IntersectionContext<'a> {
         cos = cos_t;
       }
 
-      let mut r0 = (self.n1 - self.n2) / (self.n1 + self.n2);
-      r0 = r0 * r0;
-      return r0 + (1. - r0) * ((1. - cos).sqrt());
+      let r0 = (self.n1 - self.n2) / (self.n1 + self.n2);
+      let r0 = r0 * r0;
+      return r0 + (1. - r0) * (1. - cos).powf(5.);
     }
 }
 
@@ -441,5 +441,21 @@ mod tests {
                 .shade_hit(&w, MAX_REFRACTIONS),
             Color::new(0.93642, 0.68642, 0.68642)
         );
+    }
+
+    #[test]
+    fn schlick() {
+      let sphere = Sphere::glass_new();
+      let r = Ray::new(Tuple::point(0., 0., 2_f64.sqrt()/2.), Tuple::vector(0., 1., 0.));
+      let xs = r.intersect_object(&sphere);
+      assert_eq!(xs.intersections[1].context(&r, Some(&xs)).schlick(), 1.);
+
+      let r = Ray::new(Tuple::point(0., 0., 0.), Tuple::vector(0., 1., 0.));
+      let xs = r.intersect_object(&sphere);
+      assert_eq!(xs.intersections[1].context(&r, Some(&xs)).schlick(), 0.04);
+
+      let r = Ray::new(Tuple::point(0., 0.99, -2.), Tuple::vector(0., 0., 1.));
+      let xs = r.intersect_object(&sphere);
+      assert_eq!(xs.intersections[0].context(&r, Some(&xs)).schlick(), 0.48873);
     }
 }

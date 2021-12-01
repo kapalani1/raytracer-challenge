@@ -38,7 +38,7 @@ fn main() {
     let light = PointLight::new(Tuple::point(-5., 10., -10.), Color::new(1., 1., 1.));
 
     let world = World::new(vec![floor, sphere1, sphere2], vec![light]);
-    let mut camera = Camera::new(800, 400, PI / 1.5, SuperSamplingMode::Stochastic);
+    let mut camera = Camera::new(400, 200, PI / 1.5, SuperSamplingMode::None);
     camera.transform = Matrix::view_transform(
         Tuple::point(-1., 2., -9.),
         Tuple::point(0., 1., 0.),
