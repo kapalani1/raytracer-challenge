@@ -2,7 +2,7 @@ use std::{any::Any, ops::Add};
 
 use crate::{
     intersection::IntersectionContext, material::Material, matrix::Matrix, ray::Ray,
-    sphere::Sphere, tuple::Tuple, EPSILON,
+    sphere::{Sphere}, tuple::Tuple, EPSILON, plane::Plane,
 };
 
 pub const MAX_REFLECTIONS: u8 = 4;
@@ -10,6 +10,7 @@ pub const MAX_REFLECTIONS: u8 = 4;
 #[derive(Debug, Clone)]
 pub enum ShapeType {
     Sphere(Sphere),
+    Plane(Plane),
 }
 
 #[derive(Debug, Clone)]
@@ -17,6 +18,36 @@ pub struct Object {
     pub transform: Matrix,
     pub shape: ShapeType,
     pub material: Material,
+}
+
+impl Object {
+    pub fn local_object_intersect(&self, ray_obj_space: &Ray) -> ObjectIntersectionList {
+        match &self.shape {
+            ShapeType::Sphere(ref sphere) => sphere.local_object_intersect(ray_obj_space, self),
+            ShapeType::Plane(ref plane) => plane.local_object_intersect(ray_obj_space, self),
+        }
+    }
+
+    pub fn local_object_normal(&self, point: Tuple) -> Tuple {
+      match &self.shape {
+        ShapeType::Sphere(ref sphere) => sphere.local_object_normal(point),
+        &ShapeType::Plane(ref plane) => plane.local_object_normal(point),
+      }
+    }
+
+    pub fn intersect_object(&self, ray: &Ray) -> ObjectIntersectionList {
+        let ray_obj_space = ray.transform(&(self.transform.inverse()));
+        self.local_object_intersect(&ray_obj_space)
+    }
+
+    pub fn normal_object(&self, point: Tuple) -> Tuple {
+        assert!(point.is_point());
+        let object_space_point = self.transform.inverse() * point;
+        let object_normal = self.local_object_normal(object_space_point);
+        let mut world_normal = self.transform.inverse().transpose() * object_normal;
+        world_normal.w = 0.;
+        world_normal.normalize()
+    }
 }
 
 pub trait Shape: Send + Sync {
@@ -86,6 +117,53 @@ impl Shape for Box<dyn Shape> {
 pub struct Intersection<'a> {
     pub t: f64,
     pub shape: &'a dyn Shape,
+}
+
+#[derive(Clone, Debug)]
+pub struct ObjectIntersection<'a> {
+    pub t: f64,
+    pub object: &'a Object,
+}
+
+impl<'a> ObjectIntersection<'a> {
+    pub fn new(t: f64, object: &'a Object) -> ObjectIntersection<'a> {
+        Self { t, object }
+    }
+}
+
+impl<'a> PartialEq for ObjectIntersection<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.t == other.t && std::ptr::eq(self.object, other.object)
+    }
+}
+
+impl<'a> PartialOrd for ObjectIntersection<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.t.partial_cmp(&other.t)
+    }
+}
+
+impl<'a> Ord for ObjectIntersection<'a> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.partial_cmp(&other).unwrap()
+    }
+}
+
+impl<'a> Eq for ObjectIntersection<'a> {}
+
+#[derive(Clone, Debug)]
+pub struct ObjectIntersectionList<'a> {
+    pub intersections: Vec<ObjectIntersection<'a>>,
+}
+
+impl<'a> ObjectIntersectionList<'a> {
+    pub fn new(intersections: Vec<ObjectIntersection<'a>>) -> Self {
+        let mut sorted_intersections = intersections.clone();
+        sorted_intersections.sort();
+        Self {
+            intersections: sorted_intersections,
+        }
+    }
 }
 
 impl<'a> std::fmt::Debug for Intersection<'a> {

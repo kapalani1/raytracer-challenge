@@ -160,6 +160,7 @@ mod tests {
                 Tuple::point(0., 0., 0.),
                 Color::new(1., 1., 1.),
             )],
+            vec![],
         );
         r.color_at(&w, MAX_REFLECTIONS);
     }

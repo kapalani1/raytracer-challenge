@@ -77,6 +77,7 @@ fn main() {
             Box::new(sphere3),
         ],
         vec![light],
+        vec![]
     );
     let mut camera = Camera::new(800, 400, PI / 1.5);
     camera.transform = Matrix::view_transform(

@@ -41,6 +41,7 @@ fn main() {
     let world = World::new(
         vec![Box::new(floor), Box::new(sphere1), Box::new(sphere2)],
         vec![light],
+        vec![]
     );
     let mut camera = Camera::new(800, 400, PI / 1.5);
     camera.transform = Matrix::view_transform(

@@ -3,7 +3,7 @@ use std::any::Any;
 use crate::material::Material;
 use crate::matrix::Matrix;
 use crate::ray::Ray;
-use crate::shape::Shape;
+use crate::shape::{Shape, Object, ShapeType, ObjectIntersectionList, ObjectIntersection};
 use crate::tuple::Tuple;
 use crate::EPSILON;
 
@@ -25,6 +25,36 @@ impl Plane {
             material,
         }
     }
+
+    pub fn object_new(material_opt: Option<Material>) -> Object {
+      let material = match material_opt {
+          Some(x) => x,
+          None => Material::new(),
+      };
+
+      Object {
+          transform: Matrix::identity(4),
+          shape: ShapeType::Plane(Plane::new(Some(material.clone()))),
+          material,
+      }
+  }
+
+  pub fn local_object_intersect<'a>(
+      &self,
+      ray_obj_space: &Ray,
+      object: &'a Object,
+  ) -> ObjectIntersectionList<'a> {
+    if ray_obj_space.direction.y.abs() < EPSILON {
+      ObjectIntersectionList::new(vec![])
+  } else {
+      let t = -ray_obj_space.origin.y / ray_obj_space.direction.y;
+      ObjectIntersectionList::new(vec![ObjectIntersection::new(t, object)])
+  }
+}
+
+  pub fn local_object_normal(&self, object_space_point: Tuple) -> Tuple {
+    Tuple::vector(0., 1., 0.)
+  }
 }
 
 impl Shape for Plane {

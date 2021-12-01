@@ -1,6 +1,6 @@
 use crate::color::Color;
 use crate::matrix::Matrix;
-use crate::shape::{IntersectionList, Shape};
+use crate::shape::{IntersectionList, Object, Shape, ObjectIntersectionList};
 use crate::tuple::Tuple;
 use crate::world::World;
 use rayon::prelude::*;
@@ -24,6 +24,10 @@ impl Ray {
 
     pub fn intersect<'a>(&self, object: &'a impl Shape) -> IntersectionList<'a> {
         object.intersect(&self)
+    }
+
+    pub fn intersect_object<'a>(&self, object: &'a Object) -> ObjectIntersectionList<'a> {
+        object.intersect_object(&self)
     }
 
     pub fn project_into_world<'a>(&self, world: &'a World) -> IntersectionList<'a> {
@@ -73,45 +77,45 @@ mod tests {
     #[test]
     fn ray_sphere_intersect() {
         let r = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
-        let s = Sphere::new(None);
-        let i = r.intersect(&s);
+        let s = Sphere::object_new(None);
+        let i = r.intersect_object(&s);
         assert_eq!(i.intersections.len(), 2);
         assert_eq!(i.intersections[0].t, 4.);
         assert_eq!(i.intersections[1].t, 6.);
-        assert!(std::ptr::eq(i.intersections[0].shape.as_any(), s.as_any()));
-        assert!(std::ptr::eq(i.intersections[1].shape.as_any(), s.as_any()));
+        assert!(std::ptr::eq(i.intersections[0].object, &s));
+        assert!(std::ptr::eq(i.intersections[1].object, &s));
 
         let r = Ray::new(Tuple::point(0., 1., -5.), Tuple::vector(0., 0., 1.));
-        let s = Sphere::new(None);
-        let i = r.intersect(&s);
+        let s = Sphere::object_new(None);
+        let i = r.intersect_object(&s);
         assert_eq!(i.intersections.len(), 2);
         assert_eq!(i.intersections[0].t, 5.);
         assert_eq!(i.intersections[1].t, 5.);
-        assert!(std::ptr::eq(i.intersections[0].shape.as_any(), s.as_any()));
-        assert!(std::ptr::eq(i.intersections[1].shape.as_any(), s.as_any()));
+        assert!(std::ptr::eq(i.intersections[0].object, &s));
+        assert!(std::ptr::eq(i.intersections[1].object, &s));
 
         let r = Ray::new(Tuple::point(0., 2., -5.), Tuple::vector(0., 0., 1.));
-        let s = Sphere::new(None);
-        let i = r.intersect(&s);
+        let s = Sphere::object_new(None);
+        let i = r.intersect_object(&s);
         assert_eq!(i.intersections.len(), 0);
 
         let r = Ray::new(Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 1.));
-        let s = Sphere::new(None);
-        let i = r.intersect(&s);
+        let s = Sphere::object_new(None);
+        let i = r.intersect_object(&s);
         assert_eq!(i.intersections.len(), 2);
         assert_eq!(i.intersections[0].t, -1.);
         assert_eq!(i.intersections[1].t, 1.);
-        assert!(std::ptr::eq(i.intersections[0].shape.as_any(), s.as_any()));
-        assert!(std::ptr::eq(i.intersections[1].shape.as_any(), s.as_any()));
+        assert!(std::ptr::eq(i.intersections[1].object, &s));
+        assert!(std::ptr::eq(i.intersections[0].object, &s));
 
         let r = Ray::new(Tuple::point(0., 0., 5.), Tuple::vector(0., 0., 1.));
-        let s = Sphere::new(None);
-        let i = r.intersect(&s);
+        let s = Sphere::object_new(None);
+        let i = r.intersect_object(&s);
         assert_eq!(i.intersections.len(), 2);
         assert_eq!(i.intersections[0].t, -6.);
         assert_eq!(i.intersections[1].t, -4.);
-        assert!(std::ptr::eq(i.intersections[0].shape.as_any(), s.as_any()));
-        assert!(std::ptr::eq(i.intersections[1].shape.as_any(), s.as_any()));
+        assert!(std::ptr::eq(i.intersections[0].object, &s));
+        assert!(std::ptr::eq(i.intersections[1].object, &s));
     }
 
     #[test]
@@ -148,14 +152,14 @@ mod tests {
         mat1.diffuse = 0.7;
         mat1.specular = 0.2;
         mat1.ambient = 1.;
-        let s1 = Sphere::new(Some(mat1));
+        let s1 = Sphere::object_new(Some(mat1));
 
         let mut mat2 = Material::new();
         mat2.ambient = 1.;
-        let mut s2 = Sphere::new(Some(mat2));
-        s2.set_transform(&Matrix::scaling(0.5, 0.5, 0.5));
+        let mut s2 = Sphere::object_new(Some(mat2));
+        s2.transform = Matrix::scaling(0.5, 0.5, 0.5);
 
-        let w = World::new(vec![Box::new(s1), Box::new(s2)], vec![light]);
+        let w = World::new(vec![], vec![light], vec![Box::new(s1), Box::new(s2)]);
         let r = Ray::new(Tuple::point(0., 0., 0.75), Tuple::vector(0., 0., -1.));
         let c = r.color_at(&w, MAX_REFLECTIONS);
         assert_eq!(c, w.objects[1].material().color);

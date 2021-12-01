@@ -1,16 +1,17 @@
 use crate::{
-    color::Color, light::PointLight, material::Material, matrix::Matrix, ray::Ray, shape::Shape,
+    color::Color, light::PointLight, material::Material, matrix::Matrix, ray::Ray, shape::{Shape, Object},
     sphere::Sphere, tuple::Tuple,
 };
 
 pub struct World {
     pub objects: Vec<Box<dyn Shape>>,
     pub lights: Vec<PointLight>,
+    pub test_objects: Vec<Box<Object>>
 }
 
 impl World {
-    pub fn new(objects: Vec<Box<dyn Shape>>, lights: Vec<PointLight>) -> Self {
-        World { objects, lights }
+    pub fn new(objects: Vec<Box<dyn Shape>>, lights: Vec<PointLight>, test_objects: Vec<Box<Object>>) -> Self {
+        World { objects, lights, test_objects }
     }
 
     pub fn default() -> Self {
@@ -24,7 +25,7 @@ impl World {
         let mut s2 = Sphere::new(None);
         s2.set_transform(&Matrix::scaling(0.5, 0.5, 0.5));
 
-        World::new(vec![Box::new(s1), Box::new(s2)], vec![light])
+        World::new(vec![Box::new(s1), Box::new(s2)], vec![light], vec![])
     }
 
     pub fn is_shadowed(&self, point: Tuple) -> bool {

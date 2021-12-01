@@ -1,13 +1,8 @@
 use crate::{
-    canvas::Canvas,
-    color::{BLACK},
-    matrix::Matrix,
-    ray::Ray,
-    shape::MAX_REFLECTIONS,
-    tuple::Tuple,
+    canvas::Canvas, color::BLACK, matrix::Matrix, ray::Ray, shape::MAX_REFLECTIONS, tuple::Tuple,
     world::World,
 };
-use rand::{Rng};
+use rand::Rng;
 use rayon::prelude::*;
 
 pub struct Camera {
