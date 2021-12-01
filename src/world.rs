@@ -1,17 +1,16 @@
 use crate::{
-    color::Color, light::PointLight, material::Material, matrix::Matrix, ray::Ray, shape::{Shape, Object},
+    color::Color, light::PointLight, material::Material, matrix::Matrix, ray::Ray, shape::Object,
     sphere::Sphere, tuple::Tuple,
 };
 
 pub struct World {
-    pub objects: Vec<Box<dyn Shape>>,
+    pub objects: Vec<Object>,
     pub lights: Vec<PointLight>,
-    pub test_objects: Vec<Box<Object>>
 }
 
 impl World {
-    pub fn new(objects: Vec<Box<dyn Shape>>, lights: Vec<PointLight>, test_objects: Vec<Box<Object>>) -> Self {
-        World { objects, lights, test_objects }
+    pub fn new(objects: Vec<Object>, lights: Vec<PointLight>) -> Self {
+        World { objects, lights }
     }
 
     pub fn default() -> Self {
@@ -23,9 +22,9 @@ impl World {
         let s1 = Sphere::new(Some(mat1));
 
         let mut s2 = Sphere::new(None);
-        s2.set_transform(&Matrix::scaling(0.5, 0.5, 0.5));
+        s2.transform = Matrix::scaling(0.5, 0.5, 0.5);
 
-        World::new(vec![Box::new(s1), Box::new(s2)], vec![light], vec![])
+        World::new(vec![s1, s2], vec![light])
     }
 
     pub fn is_shadowed(&self, point: Tuple) -> bool {
@@ -36,7 +35,7 @@ impl World {
         let direction = v.normalize();
 
         let r = Ray::new(point, direction);
-        let i = r.project_into_world(&self);
+        let i = r.intersect_world(&self);
         let hit = i.hit();
         match hit {
             Some(h) => {
@@ -69,30 +68,16 @@ mod tests {
         mat1.specular = 0.2;
         let s1 = Sphere::new(Some(mat1));
         let mut s2 = Sphere::new(None);
-        s2.set_transform(&Matrix::scaling(0.5, 0.5, 0.5));
-        assert_eq!(
-            *w.objects[0]
-                .as_ref()
-                .as_any()
-                .downcast_ref::<Sphere>()
-                .unwrap(),
-            s1
-        );
-        assert_eq!(
-            *w.objects[1]
-                .as_ref()
-                .as_any()
-                .downcast_ref::<Sphere>()
-                .unwrap(),
-            s2
-        );
+        s2.transform = Matrix::scaling(0.5, 0.5, 0.5);
+        assert_eq!(w.objects[0], s1);
+        assert_eq!(w.objects[1], s2);
     }
 
     #[test]
     fn ray_into_world() {
         let w = World::default();
         let r = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
-        let xs = r.project_into_world(&w);
+        let xs = r.intersect_world(&w);
         assert_eq!(xs.intersections.len(), 4);
         assert_eq!(xs.intersections[0].t, 4.);
         assert_eq!(xs.intersections[1].t, 4.5);

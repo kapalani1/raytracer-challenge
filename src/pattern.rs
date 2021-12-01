@@ -1,4 +1,4 @@
-use crate::{color::Color, matrix::Matrix, shape::Shape, tuple::Tuple};
+use crate::{color::Color, matrix::Matrix, shape::Object, tuple::Tuple};
 use noise::{NoiseFn, Seedable, SuperSimplex};
 use rand::Rng;
 
@@ -50,8 +50,8 @@ impl Pattern {
         }
     }
 
-    pub fn pattern_at_shape(&self, shape: &dyn Shape, point: Tuple) -> Color {
-        let object_point = shape.transform().inverse() * point;
+    pub fn pattern_at_object(&self, object: &Object, point: Tuple) -> Color {
+        let object_point = object.transform.inverse() * point;
         let pattern_point = self.transform.inverse() * object_point;
         self.pattern_at(pattern_point)
     }
@@ -183,21 +183,21 @@ mod tests {
     #[test]
     fn stripe_at() {
         let mut object = Sphere::new(None);
-        object.set_transform(&Matrix::scaling(2., 2., 2.));
+        object.transform = Matrix::scaling(2., 2., 2.);
         let pattern = StripePattern::new(vec![WHITE, BLACK]);
-        let c = pattern.pattern_at_shape(&object, Tuple::point(1.5, 0., 0.));
+        let c = pattern.pattern_at_object(&object, Tuple::point(1.5, 0., 0.));
         assert_eq!(c, WHITE);
 
         let mut pattern = StripePattern::new(vec![WHITE, BLACK]);
         pattern.set_transform(&Matrix::scaling(2., 2., 2.));
-        let c = pattern.pattern_at_shape(&object, Tuple::point(1.5, 0., 0.));
+        let c = pattern.pattern_at_object(&object, Tuple::point(1.5, 0., 0.));
         assert_eq!(c, WHITE);
 
         let mut object = Sphere::new(None);
-        object.set_transform(&Matrix::scaling(2., 2., 2.));
+        object.transform = Matrix::scaling(2., 2., 2.);
         let mut pattern = StripePattern::new(vec![WHITE, BLACK]);
         pattern.set_transform(&Matrix::scaling(0.5, 0.5, 0.5));
-        let c = pattern.pattern_at_shape(&object, Tuple::point(2.5, 0., 0.));
+        let c = pattern.pattern_at_object(&object, Tuple::point(2.5, 0., 0.));
         assert_eq!(c, WHITE);
     }
 

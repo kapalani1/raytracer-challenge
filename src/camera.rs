@@ -5,6 +5,11 @@ use crate::{
 use rand::Rng;
 use rayon::prelude::*;
 
+pub enum SuperSamplingMode {
+    None,
+    Stochastic,
+}
+
 pub struct Camera {
     hsize: usize,
     vsize: usize,
@@ -13,10 +18,16 @@ pub struct Camera {
     half_height: f64,
     pixel_size: f64,
     pub transform: Matrix,
+    supersampling_mode: SuperSamplingMode,
 }
 
 impl Camera {
-    pub fn new(hsize: usize, vsize: usize, field_of_view: f64) -> Self {
+    pub fn new(
+        hsize: usize,
+        vsize: usize,
+        field_of_view: f64,
+        supersampling_mode: SuperSamplingMode,
+    ) -> Self {
         let half_view = (field_of_view / 2.).tan();
         let aspect = hsize as f64 / vsize as f64;
         let (half_width, half_height) = if aspect >= 1. {
@@ -35,6 +46,7 @@ impl Camera {
             half_height,
             pixel_size,
             transform: Matrix::identity(4),
+            supersampling_mode,
         }
     }
 
@@ -83,28 +95,20 @@ impl Camera {
             .for_each(|(index, color)| {
                 let row = index / canvas.width;
                 let col = index % canvas.width;
-                let ray = self.project_ray(col, row);
-                *color = ray.color_at(&world, MAX_REFLECTIONS);
-            });
-
-        canvas
-    }
-
-    pub fn render_supersample(&self, world: &World) -> Canvas {
-        let mut canvas = Canvas::new(self.hsize, self.vsize);
-        canvas
-            .pixels
-            .par_iter_mut()
-            .enumerate()
-            .for_each(|(index, color)| {
-                let row = index / canvas.width;
-                let col = index % canvas.width;
-                let ray = self.project_subsample_rays(col, row);
-                *color = ray
-                    .iter()
-                    .map(|ray| ray.color_at(&world, MAX_REFLECTIONS))
-                    .fold(BLACK, |a, b| a + b)
-                    * (1.0 / ray.len() as f64);
+                match self.supersampling_mode {
+                    SuperSamplingMode::None => {
+                        let ray = self.project_ray(col, row);
+                        *color = ray.color_hit(&world, MAX_REFLECTIONS);
+                    }
+                    SuperSamplingMode::Stochastic => {
+                        let rays = self.project_subsample_rays(col, row);
+                        *color = rays
+                            .iter()
+                            .map(|ray| ray.color_hit(world, MAX_REFLECTIONS))
+                            .fold(BLACK, |a, b| a + b)
+                            * (1.0 / rays.len() as f64);
+                    }
+                }
             });
 
         canvas

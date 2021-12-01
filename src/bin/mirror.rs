@@ -1,12 +1,11 @@
 use raytracer::{
-    camera::Camera,
+    camera::{Camera, SuperSamplingMode},
     color::{Color, BLACK, BLUE, WHITE},
     light::PointLight,
     material::Material,
     matrix::Matrix,
     pattern::{CheckerPattern, GradientPattern},
     plane::Plane,
-    shape::Shape,
     sphere::Sphere,
     tuple::Tuple,
     world::World,
@@ -27,29 +26,25 @@ fn main() {
     let pattern = GradientPattern::new(BLUE, BLACK);
     material.pattern = Some(pattern);
     let mut sphere1 = Sphere::new(Some(material));
-    sphere1.set_transform(&Matrix::translation(-1.3, 1.5, -4.));
+    sphere1.transform = Matrix::translation(-1.3, 1.5, -4.);
 
     material = Material::new();
     material.diffuse = 0.7;
     material.specular = 0.3;
     material.transparency = 0.5;
     let mut sphere2 = Sphere::new(Some(material));
-    sphere2.set_transform(&Matrix::translation(0.0, 2., -6.));
+    sphere2.transform = Matrix::translation(0.0, 2., -6.);
 
     let light = PointLight::new(Tuple::point(-5., 10., -10.), Color::new(1., 1., 1.));
 
-    let world = World::new(
-        vec![Box::new(floor), Box::new(sphere1), Box::new(sphere2)],
-        vec![light],
-        vec![]
-    );
-    let mut camera = Camera::new(800, 400, PI / 1.5);
+    let world = World::new(vec![floor, sphere1, sphere2], vec![light]);
+    let mut camera = Camera::new(800, 400, PI / 1.5, SuperSamplingMode::Stochastic);
     camera.transform = Matrix::view_transform(
         Tuple::point(-1., 2., -9.),
         Tuple::point(0., 1., 0.),
         Tuple::vector(0., 1., 0.),
     );
 
-    let canvas = camera.render_supersample(&world);
+    let canvas = camera.render(&world);
     canvas.save_ppm("mirror_spheres.ppm");
 }

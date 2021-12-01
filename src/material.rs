@@ -1,5 +1,5 @@
 use crate::{
-    color::Color, light::PointLight, pattern::Pattern, shape::Shape, tuple::Tuple, EPSILON,
+    color::Color, light::PointLight, pattern::Pattern, shape::Object, tuple::Tuple, EPSILON,
 };
 use float_cmp::approx_eq;
 
@@ -34,7 +34,7 @@ impl Material {
     pub fn lighting(
         &self,
         light: &PointLight,
-        shape: &dyn Shape,
+        object: &Object,
         point: Tuple,
         eye_vector: Tuple,
         normal_vector: Tuple,
@@ -46,7 +46,7 @@ impl Material {
 
         let color = match self.pattern {
             None => self.color,
-            Some(ref pattern) => pattern.pattern_at_shape(shape, point),
+            Some(ref pattern) => pattern.pattern_at_object(object, point),
         };
 
         // Haddamard multiplication of material and light

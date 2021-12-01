@@ -1,11 +1,12 @@
 use crate::color::Color;
+use crate::intersection::IntersectionList;
 use crate::matrix::Matrix;
-use crate::shape::{IntersectionList, Object, Shape, ObjectIntersectionList};
+use crate::shape::Object;
 use crate::tuple::Tuple;
 use crate::world::World;
 use rayon::prelude::*;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Ray {
     pub origin: Tuple,
     pub direction: Tuple,
@@ -22,47 +23,26 @@ impl Ray {
         self.origin + self.direction * time
     }
 
-    pub fn intersect<'a>(&self, object: &'a impl Shape) -> IntersectionList<'a> {
+    pub fn intersect_object<'a>(&self, object: &'a Object) -> IntersectionList<'a> {
         object.intersect(&self)
     }
 
-    pub fn intersect_object<'a>(&self, object: &'a Object) -> ObjectIntersectionList<'a> {
-        object.intersect_object(&self)
-    }
-
-    pub fn project_into_world<'a>(&self, world: &'a World) -> IntersectionList<'a> {
+    pub fn intersect_world<'a>(&self, world: &'a World) -> IntersectionList<'a> {
         world
             .objects
             .par_iter()
-            .map(|object| self.intersect(object))
+            .map(|object| self.intersect_object(object))
             .reduce(|| IntersectionList::new(vec![]), |i1, i2| i1 + i2)
     }
 
-    pub fn project_into_world_object<'a>(&self, world: &'a World) -> ObjectIntersectionList<'a> {
-      world
-          .test_objects
-          .par_iter()
-          .map(|object| self.intersect_object(object))
-          .reduce(|| ObjectIntersectionList::new(vec![]), |i1, i2| i1 + i2)
-  }
-
-    pub fn color_at(&self, world: &World, remaining: u8) -> Color {
-        let i = self.project_into_world(world);
+    pub fn color_hit(&self, world: &World, remaining: u8) -> Color {
+        let i = self.intersect_world(world);
         let hit = i.hit();
         match hit {
             None => Color::new(0., 0., 0.),
             Some(h) => h.context(self, Some(&i)).shade_hit(world, remaining),
         }
     }
-
-    pub fn color_at_object(&self, world: &World, remaining: u8) -> Color {
-      let i = self.project_into_world_object(world);
-      let hit = i.hit();
-      match hit {
-          None => Color::new(0., 0., 0.),
-          Some(h) => h.context(self, Some(&i)).shade_hit(world, remaining),
-      }
-  }
 
     pub fn transform(&self, transformation: &Matrix) -> Self {
         let origin = transformation * self.origin;
@@ -94,7 +74,7 @@ mod tests {
     #[test]
     fn ray_sphere_intersect() {
         let r = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
-        let s = Sphere::object_new(None);
+        let s = Sphere::new(None);
         let i = r.intersect_object(&s);
         assert_eq!(i.intersections.len(), 2);
         assert_eq!(i.intersections[0].t, 4.);
@@ -103,7 +83,7 @@ mod tests {
         assert!(std::ptr::eq(i.intersections[1].object, &s));
 
         let r = Ray::new(Tuple::point(0., 1., -5.), Tuple::vector(0., 0., 1.));
-        let s = Sphere::object_new(None);
+        let s = Sphere::new(None);
         let i = r.intersect_object(&s);
         assert_eq!(i.intersections.len(), 2);
         assert_eq!(i.intersections[0].t, 5.);
@@ -112,12 +92,12 @@ mod tests {
         assert!(std::ptr::eq(i.intersections[1].object, &s));
 
         let r = Ray::new(Tuple::point(0., 2., -5.), Tuple::vector(0., 0., 1.));
-        let s = Sphere::object_new(None);
+        let s = Sphere::new(None);
         let i = r.intersect_object(&s);
         assert_eq!(i.intersections.len(), 0);
 
         let r = Ray::new(Tuple::point(0., 0., 0.), Tuple::vector(0., 0., 1.));
-        let s = Sphere::object_new(None);
+        let s = Sphere::new(None);
         let i = r.intersect_object(&s);
         assert_eq!(i.intersections.len(), 2);
         assert_eq!(i.intersections[0].t, -1.);
@@ -126,7 +106,7 @@ mod tests {
         assert!(std::ptr::eq(i.intersections[0].object, &s));
 
         let r = Ray::new(Tuple::point(0., 0., 5.), Tuple::vector(0., 0., 1.));
-        let s = Sphere::object_new(None);
+        let s = Sphere::new(None);
         let i = r.intersect_object(&s);
         assert_eq!(i.intersections.len(), 2);
         assert_eq!(i.intersections[0].t, -6.);
@@ -153,11 +133,11 @@ mod tests {
     fn test_world_color() {
         let w = World::default();
         let r = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 1., 0.));
-        let c = r.color_at(&w, MAX_REFLECTIONS);
+        let c = r.color_hit(&w, MAX_REFLECTIONS);
         assert_eq!(c, Color::new(0., 0., 0.));
 
         let r = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
-        let c = r.color_at(&w, MAX_REFLECTIONS);
+        let c = r.color_hit(&w, MAX_REFLECTIONS);
         assert_eq!(c, Color::new(0.38066, 0.47583, 0.2855));
     }
 
@@ -169,16 +149,16 @@ mod tests {
         mat1.diffuse = 0.7;
         mat1.specular = 0.2;
         mat1.ambient = 1.;
-        let s1 = Sphere::object_new(Some(mat1));
+        let s1 = Sphere::new(Some(mat1));
 
         let mut mat2 = Material::new();
         mat2.ambient = 1.;
-        let mut s2 = Sphere::object_new(Some(mat2));
+        let mut s2 = Sphere::new(Some(mat2));
         s2.transform = Matrix::scaling(0.5, 0.5, 0.5);
 
-        let w = World::new(vec![], vec![light], vec![Box::new(s1), Box::new(s2)]);
+        let w = World::new(vec![s1, s2], vec![light]);
         let r = Ray::new(Tuple::point(0., 0., 0.75), Tuple::vector(0., 0., -1.));
-        let c = r.color_at(&w, MAX_REFLECTIONS);
-        assert_eq!(c, w.objects[1].material().color);
+        let c = r.color_hit(&w, MAX_REFLECTIONS);
+        assert_eq!(c, w.objects[1].material.color);
     }
 }
