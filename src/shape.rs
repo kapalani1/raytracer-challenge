@@ -3,7 +3,8 @@ use crate::{
     sphere::Sphere, tuple::Tuple,
 };
 
-pub const MAX_REFLECTIONS: u8 = 4;
+pub const MAX_REFLECTIONS: u8 = 5;
+pub const MAX_REFRACTIONS: u8 = 5;
 
 #[derive(Debug, PartialEq)]
 pub enum ShapeType {
@@ -162,6 +163,8 @@ mod tests {
         let c = hit.context(&r, None);
         assert!(c.over_point.z < -EPSILON / 2.);
         assert!(c.point.z > c.over_point.z);
+        assert!(c.under_point.z > EPSILON / 2.);
+        assert!(c.point.z < c.under_point.z);
     }
 
     #[test]

@@ -9,17 +9,18 @@ pub enum PatternType {
     RingPattern(RingPattern),
     CheckerPattern(CheckerPattern),
     RadialGradientPattern(RadialGradientPattern),
+    TestPattern(TestPattern),
 }
 
 #[derive(Debug, Clone)]
 pub struct Pattern {
-    pub transform: Matrix,
+    transform: Matrix,
     perturb: Option<SuperSimplex>,
-    pub pattern_type: PatternType,
+    pattern_type: PatternType,
 }
 
 impl Pattern {
-    pub fn new(pattern_type: PatternType) -> Self {
+    fn new(pattern_type: PatternType) -> Self {
         Self {
             transform: Matrix::identity(4),
             perturb: None,
@@ -31,7 +32,7 @@ impl Pattern {
         self.perturb = Some(SuperSimplex::new().set_seed(rand::thread_rng().gen::<u32>()));
     }
 
-    pub fn pattern_at(&self, point: Tuple) -> Color {
+    fn pattern_at(&self, point: Tuple) -> Color {
         assert!(point.is_point());
         let point = match self.perturb {
             Some(simplex) => {
@@ -47,6 +48,7 @@ impl Pattern {
             PatternType::RingPattern(ring) => ring.color_at(point),
             PatternType::CheckerPattern(checker) => checker.color_at(point),
             PatternType::RadialGradientPattern(radial_gradient) => radial_gradient.color_at(point),
+            PatternType::TestPattern(_) => Color::new(point.x, point.y, point.z),
         }
     }
 
@@ -147,9 +149,19 @@ impl RadialGradientPattern {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct TestPattern;
+
+impl TestPattern {
+    pub fn new() -> Pattern {
+        Pattern::new(PatternType::TestPattern(TestPattern))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::color::{BLACK, WHITE};
+    use crate::material::Material;
     use crate::sphere::Sphere;
 
     use super::StripePattern;
@@ -242,5 +254,39 @@ mod tests {
         assert_eq!(pattern.pattern_at(Tuple::point(0., 0., 0.)), WHITE);
         assert_eq!(pattern.pattern_at(Tuple::point(0., 0., 0.99)), WHITE);
         assert_eq!(pattern.pattern_at(Tuple::point(0., 0., 1.01)), BLACK);
+    }
+
+    #[test]
+    fn test_pattern() {
+        let pattern = TestPattern::new();
+        let mut material = Material::new();
+        material.pattern = Some(pattern.clone());
+        let mut s = Sphere::new(Some(material));
+        s.transform = Matrix::scaling(2., 2., 2.);
+        assert_eq!(
+            pattern.pattern_at_object(&s, Tuple::point(2., 3., 4.)),
+            Color::new(1., 1.5, 2.)
+        );
+
+        let mut pattern = TestPattern::new();
+        pattern.set_transform(&Matrix::scaling(2., 2., 2.));
+        let mut material = Material::new();
+        material.pattern = Some(pattern.clone());
+        let s = Sphere::new(Some(material));
+        assert_eq!(
+            pattern.pattern_at_object(&s, Tuple::point(2., 3., 4.)),
+            Color::new(1., 1.5, 2.)
+        );
+
+        let mut pattern = TestPattern::new();
+        pattern.set_transform(&Matrix::scaling(2., 2., 2.));
+        let mut material = Material::new();
+        material.pattern = Some(pattern.clone());
+        let mut s = Sphere::new(Some(material));
+        s.transform = Matrix::scaling(2., 2., 2.);
+        assert_eq!(
+            pattern.pattern_at_object(&s, Tuple::point(2., 3., 4.)),
+            Color::new(0.5, 0.75, 1.)
+        );
     }
 }

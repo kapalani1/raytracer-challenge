@@ -57,19 +57,35 @@ impl<'a> Intersection<'a> {
         let reflect_vector = ray.direction.reflect(&normal_vector);
 
         let mut n1 = 0.;
-        let n2 = 0.;
+        let mut n2 = 0.;
 
         if let Some(xs) = xs {
-            if let Some(hit) = xs.hit() {
-                let containers: Vec<&Object> = vec![];
-
-                for i in &xs.intersections {
-                    if i == hit {
-                        if containers.len() == 0 {
-                            n1 = 1.;
-                        } else {
-                        }
+            let mut containers: Vec<&Object> = vec![];
+            for i in xs.intersections.iter() {
+                if i == self {
+                    if containers.len() == 0 {
+                        n1 = 1.;
+                    } else {
+                        n1 = containers.last().unwrap().material.refractive_index;
                     }
+                }
+
+                let index = containers
+                    .iter()
+                    .position(|&object| std::ptr::eq(object, i.object));
+                if let Some(index) = index {
+                    containers.remove(index);
+                } else {
+                    containers.push(i.object);
+                }
+
+                if i == self {
+                    if containers.len() == 0 {
+                        n2 = 1.;
+                    } else {
+                        n2 = containers.last().unwrap().material.refractive_index;
+                    }
+                    break;
                 }
             }
         }
@@ -100,35 +116,67 @@ impl<'a> IntersectionContext<'a> {
         }
     }
 
+    pub fn refracted_color(&self, world: &World, remaining: u8) -> Color {
+        if self.object.material.transparency == 0. || remaining == 0 {
+            BLACK
+        } else {
+            let n_ratio = self.n1 / self.n2;
+            let cos_i = self.eye_vector.dot(&self.normal_vector);
+            let sin2_t = n_ratio * n_ratio * (1. - cos_i * cos_i);
+            if sin2_t > 1. {
+                return BLACK;
+            }
+
+            let cos_t = (1.0 - sin2_t).sqrt();
+            let direction =
+                self.normal_vector * (n_ratio * cos_i - cos_t) - self.eye_vector * n_ratio;
+            let refracted_ray = Ray::new(self.under_point, direction);
+            refracted_ray.color_hit(world, remaining - 1) * self.object.material.transparency
+        }
+    }
+
     pub fn shade_hit(&self, world: &World, remaining: u8) -> Color {
         assert_eq!(world.lights.len(), 1);
         let in_shadow = world.is_shadowed(self.over_point);
-        self.object.material.lighting(
+        let surface = self.object.material.lighting(
             &world.lights[0],
             self.object,
             self.over_point,
             self.eye_vector,
             self.normal_vector,
             in_shadow,
-        ) + self.reflected_color(world, remaining)
+        );
+
+        let reflected = self.reflected_color(world, remaining);
+        let refracted = self.refracted_color(world, remaining);
+
+        let material = &self.object.material;
+        if material.reflective > 0. && material.transparency > 0. {
+          let reflectance = self.schlick();
+          surface + reflected * reflectance + refracted * (1. - reflectance)
+        } else {
+          surface + reflected + refracted
+        }
+    }
+
+    pub fn schlick(&self) -> f64 {
+      let mut cos = self.eye_vector.dot(&self.normal_vector);
+      if self.n1 > self.n2 {
+        let n = self.n1 / self.n2;
+        let sin2_t = n * n * (1.0 - cos * cos);
+        if sin2_t > 1. {
+          return 1.;
+        }
+
+        let cos_t = (1.0 - sin2_t).sqrt();
+        cos = cos_t;
+      }
+
+      let mut r0 = (self.n1 - self.n2) / (self.n1 + self.n2);
+      r0 = r0 * r0;
+      return r0 + (1. - r0) * ((1. - cos).sqrt());
     }
 }
-
-// impl<'a> PartialEq for IntersectionContext<'a> {
-//   fn eq(&self, other: &Self) -> bool {
-//       self.t == other.t
-//           && std::ptr::eq(self.object, other.object)
-//           && self.point == other.point
-//           && self.eye_vector == other.eye_vector
-//           && self.normal_vector == other.normal_vector
-//           && self.reflect_vector == other.reflect_vector
-//           && self.inside == other.inside
-//           && self.over_point == other.over_point
-//           && self.under_point == other.under_point
-//           && self.n1 == other.n1
-//           && self.n2 == other.n2
-//   }
-// }
 
 impl<'a> PartialEq for Intersection<'a> {
     fn eq(&self, other: &Self) -> bool {
@@ -183,14 +231,15 @@ impl<'a> Add for IntersectionList<'a> {
 mod tests {
     use super::*;
     use crate::{
-        color::BLACK,
+        color::{BLACK, RED},
         intersection::{Intersection, IntersectionList},
         light::PointLight,
         material::Material,
         matrix::Matrix,
+        pattern::TestPattern,
         plane::Plane,
         ray::Ray,
-        shape::MAX_REFLECTIONS,
+        shape::{MAX_REFLECTIONS, MAX_REFRACTIONS},
         sphere::Sphere,
     };
 
@@ -289,8 +338,108 @@ mod tests {
         ]);
 
         assert_eq!(xs.intersections[0].context(&r, Some(&xs)).n1, 1.);
-        // assert_eq!(xs.intersections[0].n2, 1.5);
-        // assert_eq!(xs.intersections[1].n1, 1.5);
-        // assert_eq!(xs.intersections[1].n1, 2.);
+        assert_eq!(xs.intersections[0].context(&r, Some(&xs)).n2, 1.5);
+        assert_eq!(xs.intersections[1].context(&r, Some(&xs)).n1, 1.5);
+        assert_eq!(xs.intersections[1].context(&r, Some(&xs)).n2, 2.);
+        assert_eq!(xs.intersections[2].context(&r, Some(&xs)).n1, 2.);
+        assert_eq!(xs.intersections[2].context(&r, Some(&xs)).n2, 2.5);
+        assert_eq!(xs.intersections[3].context(&r, Some(&xs)).n1, 2.5);
+        assert_eq!(xs.intersections[3].context(&r, Some(&xs)).n2, 2.5);
+        assert_eq!(xs.intersections[4].context(&r, Some(&xs)).n1, 2.5);
+        assert_eq!(xs.intersections[4].context(&r, Some(&xs)).n2, 1.5);
+        assert_eq!(xs.intersections[5].context(&r, Some(&xs)).n1, 1.5);
+        assert_eq!(xs.intersections[5].context(&r, Some(&xs)).n2, 1.);
+    }
+
+    #[test]
+    fn refracted_color() {
+        let w = World::default();
+        let r = Ray::new(Tuple::point(0., 0., -5.), Tuple::vector(0., 0., 1.));
+        let xs = r.intersect_world(&w);
+        assert_eq!(
+            xs.intersections[0]
+                .context(&r, Some(&xs))
+                .refracted_color(&w, MAX_REFRACTIONS),
+            BLACK
+        );
+
+        let mut w = World::default();
+        w.objects[0].material.transparency = 1.;
+        w.objects[0].material.refractive_index = 1.5;
+        let xs = r.intersect_world(&w);
+        assert_eq!(
+            xs.intersections[0]
+                .context(&r, Some(&xs))
+                .refracted_color(&w, 0),
+            BLACK
+        );
+    }
+
+    #[test]
+    fn total_internal_reflection() {
+        let mut w = World::default();
+        w.objects[0].material.transparency = 1.;
+        w.objects[0].material.refractive_index = 1.5;
+
+        let r = Ray::new(
+            Tuple::point(0., 0., 2_f64.sqrt() / 2.),
+            Tuple::vector(0., 1., 0.),
+        );
+        let xs = r.intersect_world(&w);
+        assert_eq!(
+            xs.intersections[1]
+                .context(&r, Some(&xs))
+                .refracted_color(&w, MAX_REFRACTIONS),
+            BLACK
+        );
+    }
+
+    #[test]
+    fn refraction() {
+        let mut w = World::default();
+        w.objects[0].material.ambient = 1.;
+        w.objects[0].material.transparency = 1.;
+        w.objects[0].material.pattern = Some(TestPattern::new());
+        w.objects[1].material.transparency = 1.;
+        w.objects[1].material.refractive_index = 1.5;
+
+        let r = Ray::new(Tuple::point(0., 0., 0.1), Tuple::vector(0., 1., 0.));
+        let xs = r.intersect_world(&w);
+        assert_eq!(
+            xs.intersections[2]
+                .context(&r, Some(&xs))
+                .refracted_color(&w, MAX_REFRACTIONS),
+            Color::new(0., 0.9988, 0.04725)
+        );
+    }
+
+    #[test]
+    fn shade_refraction() {
+        let mut w = World::default();
+        let mut floor_material = Material::new();
+        floor_material.transparency = 0.5;
+        floor_material.refractive_index = 1.5;
+        let mut floor = Plane::new(Some(floor_material));
+        floor.transform = Matrix::translation(0., -1., 0.);
+        w.objects.push(floor);
+
+        let mut ball_material = Material::new();
+        ball_material.color = RED;
+        ball_material.ambient = 0.5;
+        let mut ball = Sphere::new(Some(ball_material));
+        ball.transform = Matrix::translation(0., -3.5, -0.5);
+        w.objects.push(ball);
+
+        let r = Ray::new(
+            Tuple::point(0., 0., -3.),
+            Tuple::vector(0., 2_f64.sqrt() / -2., 2_f64.sqrt() / 2.),
+        );
+        let xs = r.intersect_world(&w);
+        assert_eq!(
+            xs.intersections[0]
+                .context(&r, Some(&xs))
+                .shade_hit(&w, MAX_REFRACTIONS),
+            Color::new(0.93642, 0.68642, 0.68642)
+        );
     }
 }

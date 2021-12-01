@@ -1,4 +1,4 @@
-use crate::matrix::Matrix;
+use crate::{matrix::Matrix, EPSILON};
 use float_cmp::approx_eq;
 use std::{
     ops::{Add, AddAssign, Div, Mul, Neg, Sub},
@@ -19,11 +19,11 @@ impl Tuple {
     }
 
     pub fn is_vector(&self) -> bool {
-        self.w == 0.
+        approx_eq!(f64, self.w, 0., epsilon = EPSILON)
     }
 
     pub fn is_point(&self) -> bool {
-        self.w == 1.
+        approx_eq!(f64, self.w, 1., epsilon = EPSILON)
     }
 
     pub fn point(x: f64, y: f64, z: f64) -> Self {

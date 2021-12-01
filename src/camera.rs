@@ -123,7 +123,7 @@ mod tests {
     use super::*;
     #[test]
     fn camera() {
-        let c = Camera::new(160, 120, PI / 2.);
+        let c = Camera::new(160, 120, PI / 2., SuperSamplingMode::None);
         assert_eq!(c.hsize, 160);
         assert_eq!(c.vsize, 120);
         assert_eq!(c.field_of_view, PI / 2.);
@@ -132,15 +132,15 @@ mod tests {
 
     #[test]
     fn pixel_size() {
-        let c = Camera::new(200, 125, PI / 2.);
+        let c = Camera::new(200, 125, PI / 2., SuperSamplingMode::None);
         approx_eq!(f64, c.pixel_size, 0.01, epsilon = EPSILON);
-        let c = Camera::new(125, 200, PI / 2.);
+        let c = Camera::new(125, 200, PI / 2., SuperSamplingMode::None);
         approx_eq!(f64, c.pixel_size, 0.01, epsilon = EPSILON);
     }
 
     #[test]
     fn camera_ray() {
-        let mut c = Camera::new(201, 101, PI / 2.);
+        let mut c = Camera::new(201, 101, PI / 2., SuperSamplingMode::None);
         let r = c.project_ray(100, 50);
         assert_eq!(
             r,
@@ -169,7 +169,7 @@ mod tests {
     #[test]
     fn render() {
         let w = World::default();
-        let mut c = Camera::new(11, 11, PI / 2.);
+        let mut c = Camera::new(11, 11, PI / 2., SuperSamplingMode::None);
         let from = Tuple::point(0., 0., -5.);
         let to = Tuple::point(0., 0., 0.);
         let up = Tuple::vector(0., 1., 0.);
