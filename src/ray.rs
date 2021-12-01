@@ -38,6 +38,14 @@ impl Ray {
             .reduce(|| IntersectionList::new(vec![]), |i1, i2| i1 + i2)
     }
 
+    pub fn project_into_world_object<'a>(&self, world: &'a World) -> ObjectIntersectionList<'a> {
+      world
+          .test_objects
+          .par_iter()
+          .map(|object| self.intersect_object(object))
+          .reduce(|| ObjectIntersectionList::new(vec![]), |i1, i2| i1 + i2)
+  }
+
     pub fn color_at(&self, world: &World, remaining: u8) -> Color {
         let i = self.project_into_world(world);
         let hit = i.hit();
@@ -46,6 +54,15 @@ impl Ray {
             Some(h) => h.context(self, Some(&i)).shade_hit(world, remaining),
         }
     }
+
+    pub fn color_at_object(&self, world: &World, remaining: u8) -> Color {
+      let i = self.project_into_world_object(world);
+      let hit = i.hit();
+      match hit {
+          None => Color::new(0., 0., 0.),
+          Some(h) => h.context(self, Some(&i)).shade_hit(world, remaining),
+      }
+  }
 
     pub fn transform(&self, transformation: &Matrix) -> Self {
         let origin = transformation * self.origin;

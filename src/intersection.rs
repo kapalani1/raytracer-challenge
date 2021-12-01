@@ -1,7 +1,7 @@
 use crate::{
     color::{Color, BLACK},
     ray::Ray,
-    shape::Shape,
+    shape::{Shape, Object},
     tuple::Tuple,
     world::World,
 };
@@ -19,6 +19,61 @@ pub struct IntersectionContext<'a> {
     pub under_point: Tuple,
     pub n1: f64,
     pub n2: f64,
+}
+
+#[derive(Debug)]
+pub struct ObjectIntersectionContext<'a> {
+  pub t: f64,
+  pub object: &'a Object,
+  pub point: Tuple,
+  pub eye_vector: Tuple,
+  pub normal_vector: Tuple,
+  pub reflect_vector: Tuple,
+  pub inside: bool,
+  pub over_point: Tuple,
+  pub under_point: Tuple,
+  pub n1: f64,
+  pub n2: f64,
+}
+
+impl<'a> ObjectIntersectionContext<'a> {
+  pub fn reflected_color(&self, world: &World, remaining: u8) -> Color {
+      if self.object.material.reflective == 0. || remaining == 0 {
+          BLACK
+      } else {
+          let reflect_ray = Ray::new(self.over_point, self.reflect_vector);
+          reflect_ray.color_at(world, remaining - 1) * self.object.material.reflective
+      }
+  }
+
+  pub fn shade_hit(&self, world: &World, remaining: u8) -> Color {
+      assert_eq!(world.lights.len(), 1);
+      let in_shadow = world.is_shadowed(self.over_point);
+      self.object.material.lighting(
+          &world.lights[0],
+          self.object,
+          self.over_point,
+          self.eye_vector,
+          self.normal_vector,
+          in_shadow,
+      ) + self.reflected_color(world, remaining)
+  }
+}
+
+impl<'a> PartialEq for ObjectIntersectionContext<'a> {
+  fn eq(&self, other: &Self) -> bool {
+      self.t == other.t
+          && std::ptr::eq(self.object, other.object)
+          && self.point == other.point
+          && self.eye_vector == other.eye_vector
+          && self.normal_vector == other.normal_vector
+          && self.reflect_vector == other.reflect_vector
+          && self.inside == other.inside
+          && self.over_point == other.over_point
+          && self.under_point == other.under_point
+          && self.n1 == other.n1
+          && self.n2 == other.n2
+  }
 }
 
 impl<'a> IntersectionContext<'a> {

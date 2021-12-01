@@ -129,6 +129,54 @@ impl<'a> ObjectIntersection<'a> {
     pub fn new(t: f64, object: &'a Object) -> ObjectIntersection<'a> {
         Self { t, object }
     }
+
+    pub fn context(&'a self, ray: &Ray, xs: Option<&ObjectIntersectionList>) -> ObjectIntersectionContext {
+      let point = ray.position(self.t);
+      let eye_vector = -ray.direction;
+      let inside = self.object.normal_object(point).dot(&eye_vector) < 0.;
+      let normal_vector = if inside {
+          -self.object.normal_object(point)
+      } else {
+          self.object.normal_object(point)
+      };
+      let over_point = point + normal_vector * EPSILON;
+      let under_point = point - normal_vector * EPSILON;
+      let reflect_vector = ray.direction.reflect(&normal_vector);
+
+      let mut n1 = 0.;
+      let mut n2 = 0.;
+
+      if let Some(xs) = xs {
+          if let Some(hit) = xs.hit() {
+              let mut containers: Vec<&dyn Any> = vec![];
+
+              for i in &xs.intersections {
+                  if i == hit {
+                      if containers.len() == 0 {
+                          n1 = 1.;
+                      } else {
+                      }
+                  }
+              }
+          }
+      }
+
+      ObjectIntersectionContext {
+          t: self.t,
+          object: self.object,
+          point,
+          eye_vector,
+          normal_vector,
+          reflect_vector,
+          inside,
+          over_point,
+          under_point,
+          n1,
+          n2: 0.,
+      }
+  }
+
+
 }
 
 impl<'a> PartialEq for ObjectIntersection<'a> {
@@ -164,7 +212,30 @@ impl<'a> ObjectIntersectionList<'a> {
             intersections: sorted_intersections,
         }
     }
+
+    pub fn hit(&self) -> Option<&ObjectIntersection> {
+      let filtered: Vec<_> = self.intersections.iter().filter(|x| x.t > 0.).collect();
+      match filtered.len() {
+          0 => None,
+          _ => Some(&filtered[0]),
+      }
+  }
 }
+
+impl<'a> Add for ObjectIntersectionList<'a> {
+  type Output = Self;
+
+  fn add(self, rhs: Self) -> Self::Output {
+      let mut sorted_intersections = self.intersections;
+      let mut rhs = rhs;
+      sorted_intersections.append(&mut rhs.intersections);
+      sorted_intersections.sort();
+      ObjectIntersectionList {
+          intersections: sorted_intersections,
+      }
+  }
+}
+
 
 impl<'a> std::fmt::Debug for Intersection<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
