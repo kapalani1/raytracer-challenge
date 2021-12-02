@@ -1,6 +1,6 @@
 use crate::{
     intersection::IntersectionList, material::Material, matrix::Matrix, shapes::Plane, ray::Ray,
-    shapes::Sphere, tuple::Tuple,
+    shapes::{Sphere, Cube}, tuple::Tuple,
 };
 
 pub const MAX_REFLECTIONS: u8 = 5;
@@ -10,6 +10,7 @@ pub const MAX_REFRACTIONS: u8 = 5;
 pub enum ShapeType {
     Sphere(Sphere),
     Plane(Plane),
+    Cube(Cube)
 }
 
 #[derive(Debug, PartialEq)]
@@ -24,13 +25,15 @@ impl Object {
         match &self.shape {
             ShapeType::Sphere(ref sphere) => sphere.local_intersect(ray_obj_space, self),
             ShapeType::Plane(ref plane) => plane.local_intersect(ray_obj_space, self),
+            ShapeType::Cube(ref cube) => cube.local_intersect(ray_obj_space, self),
         }
     }
 
     fn local_normal_at(&self, point: Tuple) -> Tuple {
         match &self.shape {
             ShapeType::Sphere(ref sphere) => sphere.local_normal_at(point),
-            &ShapeType::Plane(ref plane) => plane.local_normal_at(point),
+            ShapeType::Plane(ref plane) => plane.local_normal_at(point),
+            ShapeType::Cube(ref cube) => cube.local_normal_at(point),
         }
     }
 
