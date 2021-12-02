@@ -30,9 +30,9 @@ impl Ray {
     pub fn intersect_world<'a>(&self, world: &'a World) -> IntersectionList<'a> {
         world
             .objects
-            .par_iter()
+            .iter()
             .map(|object| self.intersect_object(object))
-            .reduce(|| IntersectionList::new(vec![]), |i1, i2| i1 + i2)
+            .fold(IntersectionList::new(vec![]), |acc, i| acc + i)
     }
 
     pub fn color_hit(&self, world: &World, remaining: u8) -> Color {

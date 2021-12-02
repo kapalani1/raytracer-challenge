@@ -229,6 +229,8 @@ impl<'a> Add for IntersectionList<'a> {
 
 #[cfg(test)]
 mod tests {
+    use float_cmp::approx_eq;
+
     use super::*;
     use crate::{
         color::{BLACK, RED},
@@ -452,10 +454,10 @@ mod tests {
 
       let r = Ray::new(Tuple::point(0., 0., 0.), Tuple::vector(0., 1., 0.));
       let xs = r.intersect_object(&sphere);
-      assert_eq!(xs.intersections[1].context(&r, Some(&xs)).schlick(), 0.04);
+      approx_eq!(f64, xs.intersections[1].context(&r, Some(&xs)).schlick(), 0.04, epsilon = EPSILON);
 
       let r = Ray::new(Tuple::point(0., 0.99, -2.), Tuple::vector(0., 0., 1.));
       let xs = r.intersect_object(&sphere);
-      assert_eq!(xs.intersections[0].context(&r, Some(&xs)).schlick(), 0.48873);
+      approx_eq!(f64, xs.intersections[0].context(&r, Some(&xs)).schlick(), 0.48873, epsilon = EPSILON);
     }
 }
