@@ -1,6 +1,6 @@
 use rayon::prelude::*;
 use raytracer::{
-    canvas::Canvas, color::Color, light::PointLight, ray::Ray, sphere::Sphere, tuple::Tuple,
+    canvas::Canvas, color::Color, light::PointLight, ray::Ray, shapes::Sphere, tuple::Tuple,
 };
 
 fn main() {

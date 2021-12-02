@@ -4,7 +4,6 @@ use crate::matrix::Matrix;
 use crate::shape::Object;
 use crate::tuple::Tuple;
 use crate::world::World;
-use rayon::prelude::*;
 
 #[derive(Debug, PartialEq)]
 pub struct Ray {
@@ -54,7 +53,7 @@ impl Ray {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{light::PointLight, material::Material, shape::MAX_REFLECTIONS, sphere::Sphere};
+    use crate::{light::PointLight, material::Material, shape::MAX_REFLECTIONS, shapes::Sphere};
 
     #[test]
     fn ray() {

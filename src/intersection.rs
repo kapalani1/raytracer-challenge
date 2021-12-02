@@ -239,10 +239,10 @@ mod tests {
         material::Material,
         matrix::Matrix,
         pattern::TestPattern,
-        plane::Plane,
+        shapes::Plane,
         ray::Ray,
         shape::{MAX_REFLECTIONS, MAX_REFRACTIONS},
-        sphere::Sphere,
+        shapes::Sphere,
     };
 
     #[test]

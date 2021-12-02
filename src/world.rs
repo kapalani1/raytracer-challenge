@@ -1,6 +1,6 @@
 use crate::{
     color::Color, light::PointLight, material::Material, matrix::Matrix, ray::Ray, shape::Object,
-    sphere::Sphere, tuple::Tuple,
+    shapes::Sphere, tuple::Tuple,
 };
 
 pub struct World {

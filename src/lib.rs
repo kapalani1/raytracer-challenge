@@ -15,6 +15,3 @@ pub mod world;
 
 pub const EPSILON: f64 = 0.0001;
 pub const PI: f64 = std::f64::consts::PI;
-
-pub use crate::shapes::sphere as sphere;
-pub use crate::shapes::plane as plane;

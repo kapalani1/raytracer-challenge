@@ -1,6 +1,6 @@
 use crate::{
-    intersection::IntersectionList, material::Material, matrix::Matrix, plane::Plane, ray::Ray,
-    sphere::Sphere, tuple::Tuple,
+    intersection::IntersectionList, material::Material, matrix::Matrix, shapes::Plane, ray::Ray,
+    shapes::Sphere, tuple::Tuple,
 };
 
 pub const MAX_REFLECTIONS: u8 = 5;
@@ -54,7 +54,7 @@ mod tests {
     use super::*;
     use crate::{
         color::Color, intersection::Intersection, light::PointLight, matrix::Matrix,
-        sphere::Sphere, world::World, EPSILON,
+        shapes::Sphere, world::World, EPSILON,
     };
 
     #[test]

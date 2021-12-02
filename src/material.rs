@@ -93,7 +93,7 @@ mod tests {
     use crate::{
         color::{BLACK, WHITE},
         pattern::StripePattern,
-        sphere::Sphere,
+        shapes::Sphere,
     };
 
     use super::*;

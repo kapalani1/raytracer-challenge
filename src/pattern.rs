@@ -162,7 +162,7 @@ impl TestPattern {
 mod tests {
     use crate::color::{BLACK, WHITE};
     use crate::material::Material;
-    use crate::sphere::Sphere;
+    use crate::shapes::Sphere;
 
     use super::StripePattern;
     use super::*;

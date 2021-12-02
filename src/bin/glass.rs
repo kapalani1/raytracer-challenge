@@ -5,8 +5,8 @@ use raytracer::{
     material::Material,
     matrix::Matrix,
     pattern::{CheckerPattern, StripePattern},
-    plane::Plane,
-    sphere::Sphere,
+    shapes::Plane,
+    shapes::Sphere,
     tuple::Tuple,
     world::World,
 };
