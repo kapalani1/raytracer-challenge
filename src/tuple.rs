@@ -56,17 +56,6 @@ impl Tuple {
         )
     }
 
-    pub fn from_matrix(m: &Matrix) -> Self {
-        assert_eq!(m.values.len(), 4);
-        assert_eq!(m.values[0].len(), 1);
-        Tuple {
-            x: m.values[0][0],
-            y: m.values[1][0],
-            z: m.values[2][0],
-            w: m.values[3][0],
-        }
-    }
-
     pub fn to_vector(&self) -> Vec<f64> {
         vec![self.x, self.y, self.z, self.w]
     }

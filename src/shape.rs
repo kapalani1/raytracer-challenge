@@ -1,6 +1,14 @@
 use crate::{
-    intersection::IntersectionList, material::Material, matrix::Matrix, shapes::Plane, ray::Ray,
-    shapes::{Sphere, Cube}, tuple::Tuple,
+    intersection::IntersectionList,
+    material::Material,
+    matrix::Matrix,
+    ray::Ray,
+    shapes::Plane,
+    shapes::{
+        cylinder::{self, Cylinder},
+        Cube, Sphere,
+    },
+    tuple::Tuple,
 };
 
 pub const MAX_REFLECTIONS: u8 = 5;
@@ -10,7 +18,8 @@ pub const MAX_REFRACTIONS: u8 = 5;
 pub enum ShapeType {
     Sphere(Sphere),
     Plane(Plane),
-    Cube(Cube)
+    Cube(Cube),
+    Cylinder(Cylinder),
 }
 
 #[derive(Debug, PartialEq)]
@@ -26,6 +35,7 @@ impl Object {
             ShapeType::Sphere(ref sphere) => sphere.local_intersect(ray_obj_space, self),
             ShapeType::Plane(ref plane) => plane.local_intersect(ray_obj_space, self),
             ShapeType::Cube(ref cube) => cube.local_intersect(ray_obj_space, self),
+            ShapeType::Cylinder(ref cylinder) => cylinder.local_intersect(ray_obj_space, self),
         }
     }
 
@@ -34,6 +44,7 @@ impl Object {
             ShapeType::Sphere(ref sphere) => sphere.local_normal_at(point),
             ShapeType::Plane(ref plane) => plane.local_normal_at(point),
             ShapeType::Cube(ref cube) => cube.local_normal_at(point),
+            ShapeType::Cylinder(ref cylinder) => cylinder.local_normal_at(point),
         }
     }
 

@@ -1,6 +1,6 @@
 use raytracer::{
     camera::{Camera, SuperSamplingMode},
-    color::{Color},
+    color::Color,
     light::PointLight,
     material::Material,
     matrix::Matrix,
@@ -116,7 +116,7 @@ fn main() {
     let world = World::new(
         vec![
             floor, ceiling, west_wall, east_wall, north_wall, south_wall, sphere1, sphere2,
-            sphere3, sphere4, sphere5, sphere6, sphere7
+            sphere3, sphere4, sphere5, sphere6, sphere7,
         ],
         vec![light],
     );

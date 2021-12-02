@@ -2,57 +2,57 @@ use crate::{matrix::Matrix, tuple::Tuple};
 
 impl Matrix {
     pub fn translation(x: f64, y: f64, z: f64) -> Matrix {
-        let mut translation = Matrix::identity(4);
-        translation.values[0][3] = x;
-        translation.values[1][3] = y;
-        translation.values[2][3] = z;
-        translation
+        Matrix::new(&vec![
+            vec![1., 0., 0., x],
+            vec![0., 1., 0., y],
+            vec![0., 0., 1., z],
+            vec![0., 0., 0., 1.],
+        ])
     }
 
     pub fn scaling(x: f64, y: f64, z: f64) -> Matrix {
-        let mut scaling = Matrix::identity(4);
-        scaling.values[0][0] = x;
-        scaling.values[1][1] = y;
-        scaling.values[2][2] = z;
-        scaling
+        Matrix::new(&vec![
+            vec![x, 0., 0., 0.],
+            vec![0., y, 0., 0.],
+            vec![0., 0., z, 0.],
+            vec![0., 0., 0., 1.],
+        ])
     }
 
     pub fn rotation_x(radians: f64) -> Matrix {
-        let mut rotation = Matrix::identity(4);
-        rotation.values[1][1] = radians.cos();
-        rotation.values[1][2] = -radians.sin();
-        rotation.values[2][1] = radians.sin();
-        rotation.values[2][2] = radians.cos();
-        rotation
+        Matrix::new(&vec![
+            vec![1., 0., 0., 0.],
+            vec![0., radians.cos(), -radians.sin(), 0.],
+            vec![0., radians.sin(), radians.cos(), 0.],
+            vec![0., 0., 0., 1.],
+        ])
     }
 
     pub fn rotation_y(radians: f64) -> Matrix {
-        let mut rotation = Matrix::identity(4);
-        rotation.values[0][0] = radians.cos();
-        rotation.values[0][2] = radians.sin();
-        rotation.values[2][0] = -radians.sin();
-        rotation.values[2][2] = radians.cos();
-        rotation
+        Matrix::new(&vec![
+            vec![radians.cos(), 0., radians.sin(), 0.],
+            vec![0., 1., 0., 0.],
+            vec![-radians.sin(), 0., radians.cos(), 0.],
+            vec![0., 0., 0., 1.],
+        ])
     }
 
     pub fn rotation_z(radians: f64) -> Matrix {
-        let mut rotation = Matrix::identity(4);
-        rotation.values[0][0] = radians.cos();
-        rotation.values[0][1] = -radians.sin();
-        rotation.values[1][0] = radians.sin();
-        rotation.values[1][1] = radians.cos();
-        rotation
+      Matrix::new(&vec![
+        vec![radians.cos(), -radians.sin(), 0., 0.],
+        vec![radians.sin(), radians.cos(), 0., 0.],
+        vec![0., 0., 1., 0.],
+        vec![0., 0., 0., 1.],
+      ])
     }
 
     pub fn shearing(x_y: f64, x_z: f64, y_x: f64, y_z: f64, z_x: f64, z_y: f64) -> Matrix {
-        let mut shearing = Matrix::identity(4);
-        shearing.values[0][1] = x_y;
-        shearing.values[0][2] = x_z;
-        shearing.values[1][0] = y_x;
-        shearing.values[1][2] = y_z;
-        shearing.values[2][0] = z_x;
-        shearing.values[2][1] = z_y;
-        shearing
+        Matrix::new(&vec![
+          vec![1., x_y, x_z, 0.],
+          vec![y_x, 1., y_z, 0.],
+          vec![z_x, z_y, 1., 0.],
+          vec![0., 0., 0., 1.]
+        ])
     }
 
     pub fn view_transform(from: Tuple, to: Tuple, up: Tuple) -> Matrix {

@@ -152,29 +152,29 @@ impl<'a> IntersectionContext<'a> {
 
         let material = &self.object.material;
         if material.reflective > 0. && material.transparency > 0. {
-          let reflectance = self.schlick();
-          surface + reflected * reflectance + refracted * (1. - reflectance)
+            let reflectance = self.schlick();
+            surface + reflected * reflectance + refracted * (1. - reflectance)
         } else {
-          surface + reflected + refracted
+            surface + reflected + refracted
         }
     }
 
     pub fn schlick(&self) -> f64 {
-      let mut cos = self.eye_vector.dot(&self.normal_vector);
-      if self.n1 > self.n2 {
-        let n = self.n1 / self.n2;
-        let sin2_t = n * n * (1.0 - cos * cos);
-        if sin2_t > 1. {
-          return 1.;
+        let mut cos = self.eye_vector.dot(&self.normal_vector);
+        if self.n1 > self.n2 {
+            let n = self.n1 / self.n2;
+            let sin2_t = n * n * (1.0 - cos * cos);
+            if sin2_t > 1. {
+                return 1.;
+            }
+
+            let cos_t = (1.0 - sin2_t).sqrt();
+            cos = cos_t;
         }
 
-        let cos_t = (1.0 - sin2_t).sqrt();
-        cos = cos_t;
-      }
-
-      let r0 = (self.n1 - self.n2) / (self.n1 + self.n2);
-      let r0 = r0 * r0;
-      return r0 + (1. - r0) * (1. - cos).powf(5.);
+        let r0 = (self.n1 - self.n2) / (self.n1 + self.n2);
+        let r0 = r0 * r0;
+        return r0 + (1. - r0) * (1. - cos).powf(5.);
     }
 }
 
@@ -239,9 +239,9 @@ mod tests {
         material::Material,
         matrix::Matrix,
         pattern::TestPattern,
-        shapes::Plane,
         ray::Ray,
         shape::{MAX_REFLECTIONS, MAX_REFRACTIONS},
+        shapes::Plane,
         shapes::Sphere,
     };
 
@@ -447,17 +447,30 @@ mod tests {
 
     #[test]
     fn schlick() {
-      let sphere = Sphere::glass_new();
-      let r = Ray::new(Tuple::point(0., 0., 2_f64.sqrt()/2.), Tuple::vector(0., 1., 0.));
-      let xs = r.intersect_object(&sphere);
-      assert_eq!(xs.intersections[1].context(&r, Some(&xs)).schlick(), 1.);
+        let sphere = Sphere::glass_new();
+        let r = Ray::new(
+            Tuple::point(0., 0., 2_f64.sqrt() / 2.),
+            Tuple::vector(0., 1., 0.),
+        );
+        let xs = r.intersect_object(&sphere);
+        assert_eq!(xs.intersections[1].context(&r, Some(&xs)).schlick(), 1.);
 
-      let r = Ray::new(Tuple::point(0., 0., 0.), Tuple::vector(0., 1., 0.));
-      let xs = r.intersect_object(&sphere);
-      approx_eq!(f64, xs.intersections[1].context(&r, Some(&xs)).schlick(), 0.04, epsilon = EPSILON);
+        let r = Ray::new(Tuple::point(0., 0., 0.), Tuple::vector(0., 1., 0.));
+        let xs = r.intersect_object(&sphere);
+        approx_eq!(
+            f64,
+            xs.intersections[1].context(&r, Some(&xs)).schlick(),
+            0.04,
+            epsilon = EPSILON
+        );
 
-      let r = Ray::new(Tuple::point(0., 0.99, -2.), Tuple::vector(0., 0., 1.));
-      let xs = r.intersect_object(&sphere);
-      approx_eq!(f64, xs.intersections[0].context(&r, Some(&xs)).schlick(), 0.48873, epsilon = EPSILON);
+        let r = Ray::new(Tuple::point(0., 0.99, -2.), Tuple::vector(0., 0., 1.));
+        let xs = r.intersect_object(&sphere);
+        approx_eq!(
+            f64,
+            xs.intersections[0].context(&r, Some(&xs)).schlick(),
+            0.48873,
+            epsilon = EPSILON
+        );
     }
 }

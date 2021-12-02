@@ -7,7 +7,7 @@ use crate::tuple::Tuple;
 
 #[derive(Debug, Clone)]
 pub struct Matrix {
-    pub values: Vec<Vec<f64>>,
+    values: Vec<Vec<f64>>,
 }
 
 impl Matrix {
@@ -263,7 +263,7 @@ impl<'a> Mul<Tuple> for &'a Matrix {
     type Output = Tuple;
     fn mul(self, rhs: Tuple) -> Self::Output {
         let result = self * &Matrix::new(&vec![vec![rhs.x], vec![rhs.y], vec![rhs.z], vec![rhs.w]]);
-        Tuple::from_matrix(&result)
+        Tuple::new(result.values[0][0], result.values[1][0], result.values[2][0], result.values[3][0])
     }
 }
 
