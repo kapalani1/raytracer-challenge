@@ -5,7 +5,7 @@ use crate::{
     ray::Ray,
     shapes::Plane,
     shapes::{
-        cylinder::{self, Cylinder},
+        Cylinder,
         Cube, Sphere,
     },
     tuple::Tuple,

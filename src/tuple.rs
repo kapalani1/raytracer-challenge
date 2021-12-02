@@ -1,4 +1,4 @@
-use crate::{matrix::Matrix, EPSILON};
+use crate::EPSILON;
 use float_cmp::approx_eq;
 use std::{
     ops::{Add, AddAssign, Div, Mul, Neg, Sub},
